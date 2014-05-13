@@ -4,11 +4,8 @@ from daapserver.provider import Server, Database, Container, Item
 from daapserver import zeroconf, provider, create_daap_server
 
 import sys
-import random
 import logging
-import libsonic
 import gevent
-import os
 
 # Logger instance
 logger = logging.getLogger(__name__)
