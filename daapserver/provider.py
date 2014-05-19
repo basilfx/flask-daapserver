@@ -110,7 +110,7 @@ class Server(BaseObject):
         del self.databases[database.id]
 
 class Database(BaseObject):
-    __slots__ = ["id", "persistent_id", "name", "items", "containers", "server"]
+    __slots__ = ["id", "persistent_id", "name", "items", "containers", "server", "checksum"]
 
     __children__ = ["items", "containers"]
     __propagate__ = ["containers"]
@@ -180,7 +180,7 @@ class Database(BaseObject):
         del self.containers[container.id]
 
 class Container(BaseObject):
-    __slots__ = ["id", "persistent_id", "name", "items", "parent", "is_base", "is_smart", "database"]
+    __slots__ = ["id", "persistent_id", "name", "items", "parent", "is_base", "is_smart", "database", "checksum"]
 
     __children__ = ["items"]
 
@@ -221,7 +221,7 @@ class Container(BaseObject):
 class Item(object):
     __slots__ = ["id", "persistent_id", "type", "file_path", "file_size", "file_suffix", "year",
         "duration", "genre", "artist", "title", "album", "bitrate", "track",
-        "is_gapless", "mimetype", "database"]
+        "is_gapless", "mimetype", "database", "checksum", "artwork"]
 
     def __init__(self, **kwargs):
         self.id = 1
@@ -238,6 +238,7 @@ class Item(object):
         self.album = None
         self.bitrate = 0
         self.track = 0
+        self.artwork = None
         self.is_gapless = False
         self.mimetype = None
         self.database = None
@@ -253,6 +254,11 @@ class Session(object):
         self.revision = 1
 
 class Provider(object):
+
+    session_class = Session
+
+    supports_artwork = False
+
     def __init__(self):
         """
         """
@@ -266,7 +272,7 @@ class Provider(object):
         """
 
         self.session_counter += 1
-        self.sessions[self.session_counter] = Session()
+        self.sessions[self.session_counter] = self.session_class()
 
         return self.session_counter
 
@@ -307,7 +313,7 @@ class Provider(object):
         """
         """
 
-        raise NotImplemented
+        raise NotImplemented("Needs to be overridden")
 
     def get_databases(self, session_id, revision, delta):
         """
@@ -373,7 +379,7 @@ class Provider(object):
 
         return responses.items(new, old)
 
-    def get_item(self, session_id, database_id, item_id, begin=None, end=None):
+    def get_item(self, session_id, database_id, item_id, byte_range=None):
         """
         """
 
@@ -381,35 +387,68 @@ class Provider(object):
         database = self.server.get_revision(session.revision).databases[database_id]
         item = database.items[item_id]
 
-        return self.get_item_data(item, session, begin, end)
+        return self.get_item_data(session, item, byte_range)
 
-    def get_item_data(self, item, session, begin=None, end=None):
+    def get_artwork(self, session_id, database_id, item_id):
         """
         """
 
+        session = self.sessions[session_id]
+        database = self.server.get_revision(session.revision).databases[database_id]
+        item = database.items[item_id]
+
+        return self.get_artwork_data(session, item)
+
+    def get_item_data(self, session, item, byte_range=None):
+        """
+        Fetch the requested item. The result can be an iterator, file
+        descriptor, or just raw bytes. Optionally, a begin and/or end range can
+        be specified.
+
+        The result should be an tuple, of the form (data, mimetype, size). The
+        data can be an iterator, file descriptor or raw bytes. In case a range
+        is requested, add a fourth tuple item, length. The length should be the
+        size of the requested data that is being returned.
+
+        Note: this method requires `Provider.supports_artwork = True'
+        """
+
+        raise NotImplemented("Needs to be overridden")
+
+    def get_artwork_data(self, session, item):
+        """
+        Fetch artwork for the requested item.
+
+        The result should be an tuple, of the form (data, mimetype, size). The
+        data can be an iterator, file descriptor or raw bytes.
+
+        Note: this method requires `Provider.supports_artwork = True'
+        """
+
+        raise NotImplemented("Needs to be overridden")
+
+class LocalFileProvider(Provider):
+
+    supports_artwork = True
+
+    def get_item(self, session, item, byte_range=None):
+        begin, end = byte_range if byte_range else 0, item.file_size
         fp = open(item.file_path, "rb+")
 
         if not begin:
-            return fp, item.mimetype, item.file_size, item.file_size
+            return fp, item.mimetype, item.file_size
         elif begin and not end:
-            fp.seek(begin)
-            return fp, item.mimetype, item.file_size, item.file_size - begin
+            fp.seek(start)
+            return fp, item.mimetype, item.file_size
         elif begin and end:
             fp.seek(begin)
 
             data = fp.read(end - begin)
             result = cStringIO.StringIO(data)
 
-            return result, item.mimetype, item.file_size, end - begin
+            return result, item.mimetype, item.file_size
 
-    def get_artwork(self):
-        """
-        """
+    def get_artwork_data(self, session, item):
+        fp = open(item.artwork, "rb+")
 
-        pass
-
-    def get_artwork_data(self, item, session):
-        """
-        """
-
-        pass
+        return fp, None, None

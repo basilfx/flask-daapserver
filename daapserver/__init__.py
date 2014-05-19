@@ -2,7 +2,9 @@ from daapserver.daap import do
 from daapserver import daap
 
 from flask import Flask, Response, request, send_file
+
 from werkzeug.contrib.cache import SimpleCache
+from werkzeug import http
 
 from functools import wraps
 
@@ -166,7 +168,7 @@ def create_daap_server(provider, server_name, password=None, cache=True):
     @app.route("/server-info", methods=["GET"])
     @daap_cache_response
     def server_info():
-        data = do("dmap.serverinforesponse", [
+        data = [
             do("dmap.status", 200),
             do("dmap.protocolversion", "2.0.0"),
             do("daap.protocolversion", "3.0.0"),
@@ -183,9 +185,12 @@ def create_daap_server(provider, server_name, password=None, cache=True):
             do("dmap.databasescount", 1),
             do("dmap.supportsupdate", 1),
             do("dmap.supportsresolve", 1)
-        ])
+        ]
 
-        return ObjectResponse(data)
+        if provider.supports_artwork:
+            data += [do("daap.supportsextradata", 1)]
+
+        return ObjectResponse(do("dmap.serverinforesponse", data))
 
     @app.route("/content-codes", methods=["GET"])
     @daap_cache_response
@@ -265,35 +270,42 @@ def create_daap_server(provider, server_name, password=None, cache=True):
 
     @app.route("/databases/<int:database_id>/items/<int:item_id>/extra_data/artwork", methods=["GET"])
     @daap_unpack_args
-    def database_item_artwork(database_id, item_id, session_id, revision, delta):
-        # Return JPEG
-        pass
+    def database_item_artwork(database_id, item_id, session_id):
+        data, mimetype, total_length = provider.get_artwork(session_id, database_id, item_id)
+
+        # Setup response
+        response = Response(data, 200, mimetype=mimetype, direct_passthrough=not isinstance(data, basestring))
+
+        if total_length:
+            response.headers["Content-Length"] = total_length
+
+        return response
 
     @app.route("/databases/<int:database_id>/groups/<int:group_id>/extra_data/artwork", methods=["GET"])
     @daap_unpack_args
     def database_group_artwork(database_id, group_id, session_id, revision, delta):
-        raise NotImplemented
+        raise NotImplemented("Not implemented")
 
     @app.route("/databases/<int:database_id>/items/<int:item_id>.<suffix>", methods=["GET"])
     @daap_unpack_args
-    def database_item(database_id, item_id, suffix, session_id, revision, delta):
+    def database_item(database_id, item_id, suffix, session_id):
         range_header = request.headers.get("Range", None)
 
-        if not range_header:
-            # No partial header
-            data, mimetype, size, content_length = provider.get_item(session_id, database_id, item_id)
+        if range_header:
+            begin, end = http.parse_range_header(range_header).ranges[0]
+            data, mimetype, total_length = provider.get_item(session_id, database_id, item_id, byte_range=(begin, end))
+            begin, end = (begin or 0), (end or total_length)
 
-            response = send_file(data, mimetype=mimetype)
-            response.headers["Content-Length"] = content_length
+            # Setup response
+            response = Response(data, 206, mimetype=mimetype, direct_passthrough=not isinstance(data, basestring))
+            response.headers["Content-Range"] = "bytes %d-%d/%d" % (begin, end - 1, total_length)
+            response.headers["Content-Length"] = end - begin
         else:
-            # Server wants partial file, extract range
-            values = re.search(r"(\d+)-(\d*)", range_header)
-            begin, end = [ int(value) if value else None for value in values.groups() ]
+            data, mimetype, total_length = provider.get_item(session_id, database_id, item_id)
 
-            data, mimetype, size, content_length = provider.get_item(session_id, database_id, item_id, begin=begin, end=end)
-
-            response = Response(data, 206, mimetype=mimetype, direct_passthrough=True)
-            response.headers["Content-Range"] = "bytes %d-%d/%d" % (begin, begin - content_length - 1, size)
+            # Setup response
+            response = Response(data, 200, mimetype=mimetype, direct_passthrough=not isinstance(data, basestring))
+            response.headers["Content-Length"] = total_length
 
         return response
 

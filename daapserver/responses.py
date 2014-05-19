@@ -103,7 +103,7 @@ def item(item):
     if item.track:
         data += [do("daap.songtracknumber", item.track)]
     if item.artist:
-        data += [do("daap.songartist", item.artist )]
+        data += [do("daap.songartist", item.artist)]
     if item.bitrate:
         data += [do("daap.songbitrate", item.bitrate)]
     if item.file_size:
@@ -111,7 +111,10 @@ def item(item):
     if item.year:
         data += [do("daap.songyear", item.year)]
     if item.duration:
-        data += [do("daap.songtime", item.duration )]
+        data += [do("daap.songtime", item.duration)]
+    if item.artwork:
+        data += [do("daap.songartworkcount", 1)]
+        data += [do("daap.songextradata", 1)]
 
     return do("dmap.listingitem", data)
 
