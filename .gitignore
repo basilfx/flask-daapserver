@@ -1,1 +1,8 @@
 *.pyc
+
+
+# Cython specific files
+build
+daapserver/*.html
+daapserver/*.so
+daaperver/*.c
