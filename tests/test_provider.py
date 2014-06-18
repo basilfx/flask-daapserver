@@ -1,17 +1,19 @@
-from daapserver.provider import Server, Database, Container, Item
+from daapserver.provider import Server, Database, Container, Item, ContainerItem
+from daapserver.structures import RevisionManager()
 
 import unittest
 
 class ProviderTest(unittest.TestCase):
 
     def test_structure(self):
-        server = Server()
-        item = Item(id=3)
-        container = Container(id=2)
-        database = Database(id=1)
+        manager = RevisionManager()
+        server = Server(manager)
+        item = Item(manager, id=3)
+        container = Container(manager, id=2)
+        database = Database(manager, id=1)
 
         database.add_item(item)
-        container.add_item(item)
+        container.add_container_item(item)
         database.add_container(container)
         server.add_database(database)
 
@@ -29,10 +31,10 @@ class ProviderTest(unittest.TestCase):
         item_two = Item(id=4)
 
         with self.assertRaises(ValueError):
-            container.add_item(item_two)
+            container.add_container_item(item_two)
 
         database.add_item(item_two)
-        container.add_item(item_two)
+        container.add_container_item(item_two)
 
         self.assertEqual(server.manager.revision, 1)
 
@@ -44,7 +46,7 @@ class ProviderTest(unittest.TestCase):
 
         self.assertEqual(server.manager.revision, 3)
 
-        container.delete_item(item)
+        container.delete_container_item(item)
 
         self.assertNotEqual(server.manager, container.manager)
         self.assertEqual(server.manager.revision, 3)
@@ -55,7 +57,7 @@ class ProviderTest(unittest.TestCase):
         self.assertNotEqual(container.manager, database.manager)
         self.assertEqual(server.manager.revision, 4)
 
-        container.add_item(item)
+        container.add_container_item(item)
 
         self.assertNotEqual(container.manager, database.manager)
         self.assertEqual(server.manager.revision, 4)
@@ -87,7 +89,7 @@ class ProviderTest(unittest.TestCase):
         self.assertEqual(server.manager.revision, 2)
 
         database.add_item(item_three)
-        container.add_item(item_three)
+        container.add_container_item(item_three)
 
         self.assertEqual(server.manager.revision, 3)
 
