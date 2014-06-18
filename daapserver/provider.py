@@ -1,251 +1,307 @@
-from daapserver.structures import RevisionManager, RevisionDict
-from daapserver import responses
-
-from datetime import datetime
+from daapserver import structures, responses
 
 import cStringIO
 
+__all__ = ["BaseServer", "BaseDatabase", "BaseContainer", "BaseItem",
+           "BaseContainerItem", "Provider", "Session", "LocalFileProvider"]
+
 class BaseObject(object):
-    __slots__ = []
 
-    __children__ = []
-    __propagate__ = []
+    children = []
 
-    def set_manager(self, manager):
-        """
-        Set the revision manager and propagate it to the attributes defined in
-        `__propagate__' and `__childred___'.
-        """
+    def __repr__(self):
+        attributes = []
 
-        for propagate in self.__propagate__:
-            for item in getattr(self, propagate).get_revision().itervalues():
-                item.manager = manager
+        if hasattr(self, "id"):
+            attributes.append("id=%s" % self.id)
 
-        for child in self.__children__:
-            getattr(self, child).manager = manager
+        for child, _ in self.children:
+            attributes.append("%s=%d" % (child, len(getattr(self, child))))
 
-    def get_manager(self):
-        """
-        Return the revision manager. Since every attribute defined in
-        `__children__' has the same revision manager, return it from the first
-        one.
-        """
+        return "%s<%s>" % (self.__class__.__name__, ", ".join(attributes))
 
-        return getattr(self, self.__children__[0]).manager
+    def attach(self):
+        for child, _ in self.children:
+            getattr(self, child).reset()
 
-    manager = property(get_manager, set_manager)
+        for child, propagate in self.children:
+            if propagate:
+                for item in getattr(self, child).itervalues():
+                    item.attach()
+
+    def detach(self):
+        for child, _ in self.children:
+            getattr(self, child).reset()
+
+        for child, propagate in self.children:
+            if propagate:
+                for item in getattr(self, child).itervalues():
+                    item.detach()
 
     def get_revision(self, revision):
-        """
-        Return the state of this instance at a particular revision. This
-        revision is propagated to the attributes defined in `__propagate__' and
-        `__childred___', e.g. `self.get_revision(1).children' will be the same
-        as `self.children.get_revision(1)'.
-        """
-
         class _Proxy(object):
             def __init__(other):
                 """
                 Construct a new revision proxy.
                 """
 
-                for propagate in self.__propagate__:
-                    items = getattr(self, propagate).get_revision(revision)
-                    items.wrapper = lambda x: x.get_revision(revision)
+                for child, propagate in self.children:
+                    items = getattr(self, child).get_revision(revision)
 
-                    setattr(other, propagate, items)
+                    if propagate:
+                        items.wrapper = item.get_revision
 
-                for child in self.__children__:
-                    if child not in self.__propagate__:
-                        items = getattr(self, child).get_revision(revision)
-
-                        setattr(other, child, items)
-
-            def __getattr__(other, attr):
-                """
-                Proxy all attributes except the ones from defined in
-                `__propagate__' and `__childred___'.
-                """
-
-                if attr in self.__propagate__ or attr in self.__children__:
-                    return getattr(other, attr)
-                else:
-                    return getattr(self, attr)
+                    setattr(other, child, items)
         return _Proxy()
 
-class Server(BaseObject):
-    __slots__ = ["databases"]
+class BaseServer(BaseObject):
 
-    __children__ = ["databases"]
-    __propagate__ = ["databases"]
+    children = [("databases", True)]
 
-    def __init__(self, **kwargs):
-        """
-        """
+    def __init__(self, manager):
+        self.manager = manager
 
-        self.databases = RevisionDict()
+        self.databases = structures.RevisionDict(self.manager)
 
-    def add_database(self, database):
-        """
-        """
+    def add_database(self, *databases):
+        for database in databases:
+            if not issubclass(type(database), BaseDatabase):
+                raise ValueError("Database is not subclass of BaseDatabase")
 
-        if database.server and database.server != self:
-            raise ValueError("Database is already associated with another Server")
+            if database.manager != self.manager:
+                raise ValueError("Database not associated with manager")
 
-        if database.server is None:
-            #self.manager.import_log(database.manager)
-
-            database.manager = self.manager
+        for database in databases:
             database.server = self
 
-        self.databases[database.id] = database
+            if database.id in self.databases:
+                database.items = self.databases[database.id].items
+                database.containers = self.databases[database.id].containers
 
-    def delete_database(self, database):
-        """
-        """
+            self.databases[database.id] = database
 
-        database.manager = RevisionManager()
-        database.server = None
+            database.attach()
 
-        del self.databases[database.id]
+    def delete_database(self, *databases):
+        for database in databases:
+            if not issubclass(type(database), BaseDatabase):
+                raise ValueError("Database is not subclass of BaseDatabase")
 
-class Database(BaseObject):
-    __slots__ = ["id", "persistent_id", "name", "items", "containers", "server", "checksum"]
+            if database.manager != self.manager:
+                raise ValueError("Database not associated with manager")
 
-    __children__ = ["items", "containers"]
-    __propagate__ = ["containers"]
+        for database in databases:
+            database.detach()
 
-    def __init__(self, **kwargs):
-        self.id = 1
-        self.persistent_id = 1
-        self.name = None
-        self.server = None
+            del self.databases[database.id]
 
-        self.items = RevisionDict()
-        self.containers = RevisionDict(self.items.manager)
+            database.server = None
 
-        for attr, value in kwargs.iteritems():
-            if attr in self.__slots__:
-                setattr(self, attr, value)
+class BaseDatabase(BaseObject):
 
-    def __repr__(self):
-        return "<Datebase(id=%d, name=%s)>" % (self.id, self.name)
+    children = [("items", False), ("containers", True)]
 
-    def add_item(self, item):
-        """
-        """
+    def __init__(self, manager):
+        self.manager = manager
 
-        if item.database  and item.database != self:
-            raise ValueError("Item is already associated with another Database")
+        self.items = structures.RevisionDict(self.manager)
+        self.containers = structures.RevisionDict(self.manager)
 
-        if item.database is None:
+    def add_item(self, *items):
+        for item in items:
+            if not issubclass(type(item), BaseItem):
+                raise ValueError("Item is not subclass of BaseItem")
+
+            if item.manager != self.manager:
+                raise ValueError("Item not associated with manager")
+
+        for item in items:
             item.database = self
 
-        self.items[item.id] = item
+            self.items[item.id] = item
 
-    def delete_item(self, item):
-        """
-        """
+            item.attach()
 
-        item.database = None
+    def delete_item(self, *items):
+        for item in items:
+            if not issubclass(type(item), BaseItem):
+                raise ValueError("Item is not subclass of BaseItem")
 
-        del self.items[item.id]
+            if item.manager != self.manager:
+                raise ValueError("Item not associated with manager")
 
-    def get_items(self, revision):
-        pass
+        for item in items:
+            item.detach()
 
+            del self.items[item.id]
 
-    def add_container(self, container):
-        """
-        """
+            item.database = None
 
-        if container.database and container.database != self:
-            raise ValueError("Container is already associated with another Database")
+    def add_container(self, *containers):
+        for container in containers:
+            if not issubclass(type(container), BaseContainer):
+                raise ValueError("Container is not subclass of BaseContainer")
 
-        if container.database is None:
-            #self.revision_manager.import_log(container.revision_manager)
+            if container.manager != self.manager:
+                raise ValueError("Container not associated with manager")
 
-            container.manager = self.manager
+        for container in containers:
             container.database = self
 
-        self.containers[container.id] = container
+            if container.id in self.containers:
+                container.container_items = self.containers[container.id].container_items
 
-    def delete_container(self, container):
-        """
-        """
+            self.containers[container.id] = container
 
-        container.manager = RevisionManager()
-        container.database = None
+            container.attach()
 
-        del self.containers[container.id]
+    def delete_container(self, *containers):
+        for container in containers:
+            if not issubclass(type(container), BaseContainer):
+                raise ValueError("Container is not subclass of BaseContainer")
 
-class Container(BaseObject):
-    __slots__ = ["id", "persistent_id", "name", "items", "parent", "is_base", "is_smart", "database", "checksum"]
+            if container.manager != self.manager:
+                raise ValueError("Container not associated with manager")
 
-    __children__ = ["items"]
+        for container in containers:
+            container.detach()
 
-    def __init__(self, **kwargs):
-        self.id = 1
-        self.persistent_id = 1
+            del self.containers[container.id]
+
+            container.database = None
+
+class BaseContainer(BaseObject):
+
+    children = [("container_items", False)]
+
+    def __init__(self, manager):
+        self.manager = manager
+
+        self.database = None
+
+        self.container_items = structures.RevisionDict(self.manager)
+
+    def add_container_item(self, *container_items):
+        for container_item in container_items:
+            if not issubclass(type(container_item), BaseContainerItem):
+                raise ValueError("Container item is not subclass of BaseContainerItem")
+
+            if container_item.manager != self.manager:
+                raise ValueError("Container item not associated with manager")
+
+        for container_item in container_items:
+            self.container_items[container_item.id] = container_item
+
+            container_item.container = self
+
+    def delete_container_item(self, *container_items):
+        for container_item in container_items:
+            if not issubclass(type(container_item), BaseContainerItem):
+                raise ValueError("Container item is not subclass of BaseContainerItem")
+
+            if container_item.manager != self.manager:
+                raise ValueError("Container item not associated with manager")
+
+        for container_item in container_items:
+            del self.container_items[container_item.id]
+
+            container_item.container = None
+
+
+class BaseItem(BaseObject):
+
+    def __init__(self, manager):
+        self.manager = manager
+
+        self.database = None
+
+class BaseContainerItem(BaseObject):
+
+    def __init__(self, manager):
+        self.manager = manager
+
+        self.database = None
+
+        self.container = None
+        self.item = None
+
+
+class Server(BaseServer):
+    def __init__(self, manager, **kwargs):
+        super(Server, self).__init__(manager)
+
+        self.name = None
+
+        for attr, value in kwargs.iteritems():
+            if hasattr(self, attr):
+                setattr(self, attr, value)
+
+
+class Database(BaseDatabase):
+    def __init__(self, manager, **kwargs):
+        super(Database, self).__init__(manager)
+
+        self.id = None
+        self.persistent_id = None
+
+        self.name = None
+
+        for attr, value in kwargs.iteritems():
+            if hasattr(self, attr):
+                setattr(self, attr, value)
+
+
+class Container(BaseContainer):
+    def __init__(self, manager, **kwargs):
+        super(Container, self).__init__(manager)
+
+        self.id = None
+        self.persistent_id = None
+
         self.name = None
         self.parent = None
-        self.is_base = False
         self.is_smart = False
-        self.database = None
-
-        self.items = RevisionDict()
+        self.is_base = False
 
         for attr, value in kwargs.iteritems():
-            if attr in self.__slots__:
+            if hasattr(self, attr):
                 setattr(self, attr, value)
 
-    def __repr__(self):
-        return "<Container(id=%d, name=%s)>" % (self.id, self.name)
 
-    def add_item(self, item):
-        """
-        """
+class Item(BaseItem):
+    def __init__(self, manager, **kwargs):
+        super(Item, self).__init__(manager)
 
-        # Item should be in the database
-        if item.database is None:
-            raise ValueError("Item is not associated with a Database")
+        self.id = None
+        self.persistent_id = None
 
-        self.items[item.id] = item
-
-    def delete_item(self, item):
-        """
-        """
-
-        del self.items[item.id]
-
-class Item(object):
-    __slots__ = ["id", "persistent_id", "type", "file_path", "file_size", "file_suffix", "year",
-        "duration", "genre", "artist", "title", "album", "bitrate", "track",
-        "is_gapless", "mimetype", "database", "checksum", "artwork"]
-
-    def __init__(self, **kwargs):
-        self.id = 1
-        self.persistent_id = 1
-        self.type = None
-        self.file_path = None
-        self.file_size = 0
-        self.file_suffix = None
-        self.year = None
-        self.duration = 0
-        self.genre = None
+        self.name = None
+        self.track = None
         self.artist = None
-        self.title = None
         self.album = None
-        self.bitrate = 0
-        self.track = 0
-        self.artwork = None
-        self.is_gapless = False
-        self.mimetype = None
-        self.database = None
+        self.year = None
+        self.bitrate = None
+        self.duration = None
+        self.file_size = None
+        self.file_suffix = None
+        self.album_art = None
 
         for attr, value in kwargs.iteritems():
-            if attr in self.__slots__:
+            if hasattr(self, attr):
                 setattr(self, attr, value)
+
+
+class ContainerItem(BaseContainerItem):
+    def __init__(self, manager, **kwargs):
+        super(ContainerItem, self).__init__(manager)
+
+        self.id = None
+        self.persistent_id = None
+
+        for attr, value in kwargs.iteritems():
+            if hasattr(self, attr):
+                setattr(self, attr, value)
+
 
 class Session(object):
     __slots__ = ["revision"]
@@ -253,11 +309,14 @@ class Session(object):
     def __init__(self):
         self.revision = 1
 
+
 class Provider(object):
 
     session_class = Session
 
     supports_artwork = False
+
+    supports_persistent_id = False
 
     def __init__(self):
         """
@@ -299,7 +358,7 @@ class Provider(object):
             # Wait for next revision
             next_revision = self.wait_for_update()
         else:
-            next_revision = self.server.manager.revision
+            next_revision = min(self.server.manager.revision, revision + 1)
 
         return next_revision
 
@@ -320,14 +379,13 @@ class Provider(object):
         """
 
         session = self.sessions[session_id]
-        server = self.server.get_revision(revision)
 
         if delta == 0:
-            new = server.databases
+            new = self.server.databases
             old = None
         else:
-            new = server.databases
-            old = server.get_revision(delta).databases
+            new = self.server.get_revision(revision).databases
+            old = self.server.get_revision(delta).databases
 
         return responses.databases(new, old)
 
@@ -336,14 +394,13 @@ class Provider(object):
         """
 
         session = self.sessions[session_id]
-        database = self.server.get_revision(revision).databases[database_id]
 
         if delta == 0:
-            new = database.containers
+            new = self.server.databases[database_id].containers
             old = None
         else:
-            new = database.containers
-            old = database.get_revision(delta).containers
+            new = self.server.get_revision(revision).databases[database_id].containers
+            old = self.server.get_revision(delta).database[database_id].containers
 
         return responses.containers(new, old)
 
@@ -352,30 +409,27 @@ class Provider(object):
         """
 
         session = self.sessions[session_id]
-        container = self.server.get_revision(revision).databases[database_id].containers[container_id]
 
         if delta == 0:
-            new = container.items
+            new = self.server.databases[database_id].containers[container_id].container_items
             old = None
         else:
-            new = container.items
-            old = new = container.get_revision(delta).items
+            new = self.server.get_revision(revision).databases[database_id].containers[container_id].container_items
+            old = self.server.get_revision(delta).databases[database_id].containers[container_id].container_items
 
         return responses.container_items(new, old)
 
     def get_items(self, session_id, database_id, revision, delta):
         """
         """
-
         session = self.sessions[session_id]
-        database = self.server.get_revision(revision).databases[database_id]
 
         if delta == 0:
-            new = database.items
+            new = self.server.databases[database_id].items
             old = None
         else:
-            new = database.items
-            old = database.get_revision(delta).items
+            new = self.server.get_revision(revision).databases[database_id].items
+            old = self.server.get_revision(delta).databases[database_id].items
 
         return responses.items(new, old)
 
@@ -384,8 +438,7 @@ class Provider(object):
         """
 
         session = self.sessions[session_id]
-        database = self.server.get_revision(session.revision).databases[database_id]
-        item = database.items[item_id]
+        item = self.server.databases[database_id].items[item_id]
 
         return self.get_item_data(session, item, byte_range)
 
@@ -394,8 +447,7 @@ class Provider(object):
         """
 
         session = self.sessions[session_id]
-        database = self.server.get_revision(session.revision).databases[database_id]
-        item = database.items[item_id]
+        item = self.server.databases[database_id].items[item_id]
 
         return self.get_artwork_data(session, item)
 
@@ -426,6 +478,7 @@ class Provider(object):
         """
 
         raise NotImplemented("Needs to be overridden")
+
 
 class LocalFileProvider(Provider):
 

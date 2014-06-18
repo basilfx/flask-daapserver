@@ -1,8 +1,20 @@
 import collections
 import itertools
 
+from daapserver.utils import Mapping
+
 SET = 1
 DELETE = 2
+INSERT = 3
+
+class DictBackend(dict):
+
+    def hint(self, keys=None):
+        """Hint the backend on which keys are going to be accessed. Useful for
+        backends with database storage.
+        """
+
+        pass
 
 class RevisionManager(object):
     """
@@ -11,16 +23,16 @@ class RevisionManager(object):
     __slots__ = ["last_operation", "revision", "last_revision", "sources"]
 
     def __init__(self):
-        self.last_operation = (None, None, None)
+        self.last_operation = (None, None)
         self.revision = 0
         self.last_revision = 0
 
         self.sources = {}
 
     def is_conflicting(self, operation, source, item):
-        last_operation, last_source, last_item = self.last_operation
+        last_operation, last_source = self.last_operation
 
-        self.last_operation = (operation, source, item)
+        self.last_operation = (operation, source)
         self.sources[id(source)] = source
 
         # Check for conflicts
@@ -40,44 +52,31 @@ class RevisionManager(object):
         for source in self.sources.itervalues():
             source._commit()
 
-        self.last_operation = (None, None, None)
+        self.last_operation = (None, None)
         self.sources = {}
 
-    def abort(self):
-        self.revision = self.last_revision
-
-        for source in self.sources.itervalues():
-            source._abort()
-
-        self.last_operation = (None, None, None)
-        self.sources = {}
-
-class RevisionDictView(collections.Mapping):
+class RevisionDictView(Mapping):
     """
     """
 
-    def __init__(self, revision, base, changes, added, deleted):
+    def __init__(self, revision, backend, changes, all_keys):
         self.revision = revision
-        self.base = base
+        self.backend = backend
         self.changes = changes
-        self.added = added
-        self.deleted = deleted
+        self.all_keys = all_keys
 
         # Ability to wrap items (e.g. for tree structures)
         self.wrapper = None
 
-        self.am_slotted = True
-
     def __getitem__(self, key):
-        # Check if key was deleted
-        if key in self.deleted:
-            raise KeyError
-
-        # Try revision first, then base
+        # Try changes first, then backend
         try:
             value = self.changes[key]
         except KeyError:
-            value = self.base[key]
+            if key not in self.all_keys:
+                raise KeyError
+
+            value = self.backend[key]
 
         # Wrap value (e.g. for tree structures), otherwise return
         if self.wrapper:
@@ -86,32 +85,42 @@ class RevisionDictView(collections.Mapping):
             return value
 
     def __iter__(self):
-        for key in itertools.chain(self.base, self.changes):
-            if key not in self.deleted:
-                yield key
+        self.backend.hint(self.all_keys)
+        return self.all_keys.__iter__()
 
     def __len__(self):
-        return max(0, len(self.base) - len(self.deleted)) + len(self.added)
+        self.backend.hint(self.all_keys)
+        return self.all_keys.__len__()
 
-class RevisionDict(dict):
+    def added(self, other):
+        return RevisionDictView(self.revision, self.backend, self.changes, self.all_keys - other.all_keys)
+
+    def deleted(self, other):
+        return other.added(self)
+
+class RevisionDict(Mapping):
     """
     """
 
-    def __init__(self, manager=None):
+    def __init__(self, manager=None, backend=None):
         """
         Initialize a new revision dictionary.
         """
 
+        self.backend = backend or DictBackend()
         self.manager = manager or RevisionManager()
         self.local_revision = 0
 
         # Init logging structures.
-        self.reset()
+        self.reset(reset_full=True)
 
     def __setitem__(self, key, value):
         """
-        Wrapper for the original __setitem__, to track all changes.
+        Wrapper for __setitem__ to track all changes.
         """
+
+        # Propagate to backend
+        self.backend.__setitem__(key, value)
 
         # Start new revision if the operation is conflicting, or the local
         # revision does not match the managers revision
@@ -123,20 +132,15 @@ class RevisionDict(dict):
 
         # Update logging structures
         self.last_log[key] = value
-        self.last_added.append(key)
-
-        try:
-            self.last_deleted.remove(key)
-        except ValueError:
-            pass
+        self.last_log_keys.add(key)
 
     def __delitem__(self, key):
         """
-        Wrapper for the original __delitem__, to track all changes.
+        Wrapper for __delitem__ to track all changes.
         """
 
-        if key not in self and key not in self.last_added:
-            raise KeyError
+        # Propagate to backend
+        self.backend.__delitem__(key)
 
         # Start new revision if the operation is conflicting, or the local
         # revision does not match the managers revision
@@ -147,49 +151,23 @@ class RevisionDict(dict):
             self.new_revision()
 
         # Update logging structures
-        self.last_deleted.append(key)
-
         try:
             del self.last_log[key]
         except KeyError:
             pass
 
-        try:
-            self.last_added.remove(key)
-        except ValueError:
-            pass
+        self.last_log_keys.discard(key)
 
-    def set_manager(self, manager):
-        """
-        Set the revision manager. In case a revision manager is switched, the
-        current object contents at the latest revision is added to the new
-        revision manager.
-        """
+    def __getitem__(self, key):
+        return self.backend.__getitem__(key)
 
-        # Save current state, since this will be the starting point for the next
-        # version.
-        if hasattr(self, "_manager"):
-            state = self.get_revision()
-        else:
-            state = {}
+    def __iter__(self):
+        self.backend.hint(None)
+        return self.backend.__iter__()
 
-        # Update manager
-        self._manager = manager
-
-        # The current items should be 'imported' to make sure it is consistent.
-        self.reset()
-
-        for key, value in state.iteritems():
-            self[key] = value
-
-    def get_manager(self):
-        """
-        Get the revision manager.
-        """
-
-        return self._manager
-
-    manager = property(get_manager, set_manager)
+    def __len__(self):
+        self.backend.hint(None)
+        return self.backend.__len__()
 
     def new_revision(self):
         """
@@ -203,8 +181,7 @@ class RevisionDict(dict):
 
         # Create shallow copy of the dict
         self.last_log = self.log[revision] = self.last_log.copy()
-        self.last_added = self.added[revision] = self.last_added[:]
-        self.last_deleted = self.deleted[revision] = self.last_deleted[:]
+        self.last_log_keys = self.log_keys[revision] = self.last_log_keys.copy()
 
         # Set local revision
         self.local_revision = revision
@@ -227,7 +204,7 @@ class RevisionDict(dict):
         # Nothing found, so we have no record of it
         return self.manager.revision
 
-    def get_revision(self, revision=None):
+    def get_revision(self, revision):
         """
         Return a revision of this dictionary at a particular moment in time.
         Will align the revision to the nearest older revision if no changes are
@@ -235,32 +212,41 @@ class RevisionDict(dict):
         """
 
         revision = revision or self.manager.revision
-        aligned_revision = self.find_revision(revision)
+        aligned = self.find_revision(revision)
 
-        return RevisionDictView(revision, self, self.log[aligned_revision], self.added[aligned_revision], self.deleted[aligned_revision])
+        return RevisionDictView(revision, self.backend, self.log[aligned], self.log_keys[aligned])
+
+    def reset(self, reset_full=False):
+        """
+        Reset the log keeping structures.
+        """
+
+        self.last_log = {}
+        self.last_log_keys = set(self.backend.keys())
+
+        if reset_full:
+            self.revisions = []
+
+            self.log = collections.defaultdict(dict)
+            self.log_keys = collections.defaultdict(set)
+
+        # Init current revision
+        self.new_revision()
+
+    def clear(self):
+        """
+        Clear the structure and reset the log keeping structures.
+        """
+
+        self.reset(reset_full=True)
+        super(RevisionDict, self).clear()
 
     def _commit(self):
         """
         Actual implementation of commit. Invoked by manager.
         """
 
-        for key, value in self.last_log.iteritems():
-            dict.__setitem__(self, key, value)
-
-        for key in self.last_deleted:
-            try:
-                dict.__delitem__(self, key)
-            except KeyError:
-                pass
-
         # Reset logs
-        self.reset()
-
-    def _abort(self):
-        """
-        Actual implementation of abort. Invoked by manager.
-        """
-
         self.reset()
 
     def commit(self):
@@ -269,28 +255,3 @@ class RevisionDict(dict):
         """
 
         self.manager.commit()
-
-    def abort(self):
-        """
-        Short-hand for `self.manager.abort()'
-        """
-
-        self.manager.abort()
-
-    def reset(self):
-        """
-        Reset the log keeping structures.
-        """
-
-        self.revisions = []
-
-        self.last_log = {}
-        self.last_deleted = []
-        self.last_added = []
-
-        self.log = collections.defaultdict(dict)
-        self.deleted = collections.defaultdict(list)
-        self.added = collections.defaultdict(list)
-
-        # Init current revision
-        self.new_revision()

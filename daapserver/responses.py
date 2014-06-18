@@ -1,179 +1,185 @@
-from daapserver.daap import do
+from daapserver.daap import DAAPObject
 
 def diff(new, old):
     added = deleted = None
 
+    # Take either added or deleted, but not both
     if new and old:
         update = 1
-        deleted = list(set(old.keys()) - set(new.keys()))
+        deleted = new.deleted(old)
 
         if not deleted:
-            added = list(set(new.items()) - set(old.items()))
+            added = new.added(old)
     else:
         update = 0
-        added = new.items()
+        added = new
 
+    # It should not be possible that both added and deleted are set.
     assert (not added and not deleted) or (not added and deleted) or (added and not deleted)
 
     return added, deleted, update
 
 def database(database):
     data = [
-        do("dmap.itemid", database.id),
-        do("dmap.itemname", database.name),
-        do("dmap.persistentid", database.persistent_id),
-        do("dmap.itemcount", len(database.items)),
-        do("dmap.containercount", len(database.containers))
+        DAAPObject("dmap.itemid", database.id),
+        DAAPObject("dmap.itemname", database.name),
+        DAAPObject("dmap.itemcount", len(database.items)),
+        DAAPObject("dmap.containercount", len(database.containers))
     ]
 
-    return do("dmap.listingitem", data)
+    if database.persistent_id:
+        data.append(DAAPObject("dmap.persistentid", database.persistent_id))
+
+    return DAAPObject("dmap.listingitem", data)
 
 def databases(new, old=None):
     added, deleted, update = diff(new, old)
 
-    if added:
-        return do("daap.serverdatabases", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(added)),
-            do("dmap.listing", [ database(v) for k, v in added ])
+    if added is not None:
+        return DAAPObject("daap.serverdatabases", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing", ( database(v) for v in added.itervalues() ))
         ])
     else:
-        return do("daap.serverdatabases", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(deleted)),
-            do("dmap.deletedidlisting", [ do("dmap.itemid", k) for k in deleted ])
+        return DAAPObject("daap.serverdatabases", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(deleted)),
+            DAAPObject("dmap.deletedidlisting", ( DAAPObject("dmap.itemid", k) for k in deleted.iterkeys() ))
         ])
 
-def container(container):
+def container(container, index):
     data = [
-        do("dmap.itemid", container.id),
-        do("dmap.itemname", container.name),
-        do("dmap.persistentid", container.persistent_id),
-        do("dmap.itemcount", len(container.items)),
-        do("dmap.containeritemid", container.id),
-        do("dmap.parentcontainerid", container.parent.id
-            if container.parent else 0)
+        DAAPObject("dmap.itemid", container.id),
+        DAAPObject("dmap.itemname", container.name),
+        DAAPObject("dmap.itemcount", len(container.container_items)),
+        DAAPObject("dmap.containeritemid", index),
+        DAAPObject("dmap.parentcontainerid", container.parent.id if container.parent else 0)
     ]
 
+    if container.persistent_id:
+        data.append(DAAPObject("dmap.persistentid", container.persistent_id))
     if container.is_base:
-        data += [do("daap.baseplaylist", 1)]
+        data.append(DAAPObject("daap.baseplaylist", 1))
     if container.is_smart:
-        data += [do("com.apple.itunes.smart-playlist", 1)]
+        data.append(DAAPObject("com.apple.itunes.smart-playlist", 1))
 
-    return do("dmap.listingitem", data)
+    return DAAPObject("dmap.listingitem", data)
 
 def containers(new, old=None):
     added, deleted, update = diff(new, old)
 
-    if added:
-        return do("daap.databaseplaylists", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(added)),
-            do("dmap.listing", [ container(v) for k, v in added ])
+    if added is not None:
+        return DAAPObject("daap.databaseplaylists", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing", ( container(v, i) for i, v in enumerate(added.itervalues(), start=1) ))
         ])
     else:
-        return do("daap.databaseplaylists", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(deleted)),
-            do("dmap.deletedidlisting", [ do("dmap.itemid", k) for k in deleted ])
+        return DAAPObject("daap.databaseplaylists", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(deleted)),
+            DAAPObject("dmap.deletedidlisting", ( DAAPObject("dmap.itemid", k) for k in deleted.iterkeys() ))
         ])
 
-def item(item):
+def item(item, index):
     data = [
-        do("dmap.itemid", item.id),
-        do("dmap.itemkind", 2),
-        #do("dmap.containeritemid", index),
-        do("dmap.persistentid", item.persistent_id)
+        DAAPObject("dmap.itemid", item.id),
+        DAAPObject("dmap.itemkind", 2),
+        DAAPObject("dmap.containeritemid", index),
     ]
 
-    if item.album:
-        data += [do("daap.songalbum", item.album)]
-    if item.file_suffix:
-        data += [do("daap.songformat", item.file_suffix)]
-    if item.title:
-        data += [do("dmap.itemname", item.title)]
+    if item.persistent_id:
+        data.append(DAAPObject("dmap.persistentid", item.persistent_id))
+    if item.name:
+        data.append(DAAPObject("dmap.itemname", item.name))
     if item.track:
-        data += [do("daap.songtracknumber", item.track)]
+        data.append(DAAPObject("daap.songtracknumber", item.track))
     if item.artist:
-        data += [do("daap.songartist", item.artist)]
-    if item.bitrate:
-        data += [do("daap.songbitrate", item.bitrate)]
-    if item.file_size:
-        data += [do("daap.songsize", item.file_size)]
+        data.append(DAAPObject("daap.songartist", item.artist))
+    if item.album:
+        data.append(DAAPObject("daap.songalbum", item.album))
     if item.year:
-        data += [do("daap.songyear", item.year)]
+        data.append(DAAPObject("daap.songyear", item.year))
+    if item.bitrate:
+        data.append(DAAPObject("daap.songbitrate", item.bitrate))
     if item.duration:
-        data += [do("daap.songtime", item.duration)]
-    if item.artwork:
-        data += [do("daap.songartworkcount", 1)]
-        data += [do("daap.songextradata", 1)]
+        data.append(DAAPObject("daap.songtime", item.duration))
+    if item.file_size:
+        data.append(DAAPObject("daap.songsize", item.file_size))
+    if item.file_suffix:
+        data.append(DAAPObject("daap.songformat", item.file_suffix))
+    if item.album_art:
+        data.append(DAAPObject("daap.songartworkcount", 1))
+        data.append(DAAPObject("daap.songextradata", 1))
 
-    return do("dmap.listingitem", data)
+    return DAAPObject("dmap.listingitem", data)
 
 def items(new, old=None):
     added, deleted, update = diff(new, old)
 
-    if added:
-        return do("daap.databasesongs", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(added)),
-            do("dmap.listing", [ item(v) for k, v in added ])
+    if added is not None:
+        return DAAPObject("daap.databasesongs", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing", ( item(v, i) for i, v in enumerate(added.itervalues()) ))
         ])
     else:
-        return do("daap.databasesongs", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(deleted)),
-            do("dmap.deletedidlisting", [ do("dmap.itemid", k) for k in deleted ])
+        return DAAPObject("daap.databasesongs", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(deleted)),
+            DAAPObject("dmap.deletedidlisting", ( DAAPObject("dmap.itemid", k) for k in deleted.iterkeys() ))
         ])
 
-def container_item(item):
+def container_item(container_item, index):
+    item = container_item.item
+
     data = [
-        do("dmap.itemid", index),
-        do("dmap.itemkind", 2),
-        do("dmap.containeritemid", item.id),
-        do("dmap.persistentid", item.id),
+        DAAPObject("dmap.itemid", item.id),
+        DAAPObject("dmap.itemkind", 2),
+        DAAPObject("dmap.containeritemid", index),
     ]
 
-    if item.title:
-        data += [do("daap.sortname", item.title)]
+    if container_item.persistent_id:
+        data.append(DAAPObject("dmap.persistentid", container_item.persistent_id))
+    if item.name:
+        data.append(DAAPObject("daap.sortname", item.name))
     if item.album:
-        data += [do("daap.sortalbum", item.album)]
+        data.append(DAAPObject("daap.sortalbum", item.album))
     if item.artist:
-        data += [
-            do("daap.sortartist", item.artist),
-            do("daap.sortalbumartist", item.artist)
-        ]
+        data.append(DAAPObject("daap.sortartist", item.artist))
+        data.append(DAAPObject("daap.sortalbumartist", item.artist))
 
-    return do("dmap.listingitem", data)
+    return DAAPObject("dmap.listingitem", data)
 
 def container_items(new, old=None):
     added, deleted, update = diff(new, old)
 
-    if added:
-        return do("daap.playlistsongs", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(added)),
-            do("dmap.listing", [ item(v) for k, v in added ])
+    if added is not None:
+        return DAAPObject("daap.playlistsongs", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing", ( container_item(v, i) for i, v in enumerate(added.itervalues()) ))
         ])
     else:
-        return do("daap.playlistsongs", [
-            do("dmap.status", 200),
-            do("dmap.updatetype", update),
-            do("dmap.specifiedtotalcount", len(new)),
-            do("dmap.returnedcount", len(deleted)),
-            do("dmap.deletedidlisting", [ do("dmap.itemid", k) for k in deleted ])
+        return DAAPObject("daap.playlistsongs", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", update),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(deleted)),
+            DAAPObject("dmap.deletedidlisting", ( DAAPObject("dmap.itemid", k) for k in deleted.iterkeys() ))
         ])

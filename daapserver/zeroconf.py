@@ -6,7 +6,10 @@ import sys
 import select
 import logging
 
-# Load the libraries, prefer Bonjour
+# Logger instance
+logger = logging.getLogger(__name__)
+
+# Load a publishing library. Prefer Bonjour over Avahi
 pybonjour = None
 avahi = None
 
@@ -18,9 +21,6 @@ except ImportError:
         import dbus
     except ImportError:
         pass
-
-# Logger instance
-logger = logging.getLogger(__name__)
 
 class Zeroconf(object):
     """

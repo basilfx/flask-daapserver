@@ -1,6 +1,7 @@
 from gevent.pywsgi import WSGIServer
 
-from daapserver.provider import Server, Database, Container, Item
+from daapserver.provider import Server, Database, Container, Item, ContainerItem
+from daapserver.structures import RevisionManager
 from daapserver import zeroconf, provider, create_daap_server
 
 import sys
@@ -19,25 +20,30 @@ class ExampleProvider(provider.Provider):
     def __init__(self):
         super(ExampleProvider, self,).__init__()
 
-        self.server = server = Server()
+        # It's important that `self.server' is set, as it is used by the rest of
+        # the super class as an entry point.
+        self.manager = manager = RevisionManager()
+        self.server = server = Server(manager)
 
-        database = Database(id=1, name="Library")
+        # Add some fake data
+        database = Database(manager, id=1, name="Library")
         server.add_database(database)
 
-        container_one = Container(id=1, name="My Music", is_base=True)
-        container_two = Container(id=2, name="Cool Music", parent=container_one)
-        database.add_container(container_one)
-        database.add_container(container_two)
+        container_one = Container(manager, id=1, name="My Music", is_base=True)
+        container_two = Container(manager, id=2, name="Cool Music", parent=container_one)
+        database.add_container(container_one, container_two)
 
-        track_one = track_one = Item(id=1, artist="Tenacious D", title="The Metal", track=15, duration=166000, type="mp3", year=2006, genre="Rock", mimetype="audio/mp3")
-        track_two = track_two = Item(id=2, artist="Fait No More", title="Epic", track=2, duration=291000, type="mp3", year=1989, genre="Rock", mimetype="audio/mp3")
+        track_one = Item(manager, id=1, artist="Tenacious D", album="The Pick of Destiny", name="The Metal", track=15, duration=166000, year=2006, genre="Rock", file_suffix="mp3", file_type="audio/mp3")
+        track_two = Item(manager, id=2, artist="Fait No More", album="The Real Thing", name="Epic", track=2, duration=291000,  year=1989, genre="Rock", file_suffix="mp3", file_type="audio/mp3")
+        database.add_item(track_one, track_two)
 
-        database.add_item(track_one)
-        database.add_item(track_two)
-
-        container_one.add_item(track_one)
-        container_one.add_item(track_two)
-        container_two.add_item(track_two)
+        container_item_one_a = ContainerItem(manager, id=1, item=track_one)
+        container_item_one_b = ContainerItem(manager, id=2, item=track_two)
+        container_item_two_a = ContainerItem(manager, id=3, item=track_one, order=1)
+        container_item_two_b = ContainerItem(manager, id=4, item=track_two, order=2)
+        container_item_two_c = ContainerItem(manager, id=5, item=track_one, order=3)
+        container_one.add_container_item(container_item_one_a, container_item_one_b)
+        container_two.add_container_item(container_item_two_a, container_item_two_b, container_item_two_c)
 
     def wait_for_update(self):
         # In a real server, this should block until an update, and return the
@@ -47,7 +53,7 @@ class ExampleProvider(provider.Provider):
 
     def get_item_data(self, *args, **kwargs):
         # Normally, you would provide a file pointer or raw bytes here.
-        raise NotImplemented
+        raise NotImplemented("Not supported for this example")
 
 def main():
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")

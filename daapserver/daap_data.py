@@ -1,4 +1,4 @@
-__all__ = ['dmapCodeTypes', 'dmapDataTypes', 'dmapNames', 'dmapReverseDataTypes']
+__all__ = ['dmapDataTypes', 'dmapNames', 'dmapReverseDataTypes', 'dmapCodeTypes']
 
 dmapCodeTypes = {
     #'f\x8dch': ('dmap.haschildcontainers', 'b'),
@@ -140,7 +140,7 @@ dmapCodeTypes = {
     'muty': ('dmap.updatetype', 'b'),
     'ppro': ('dpap.protocolversion', 'i'),
     'pret': ('dpap.unknown', 'c'),
-    }
+}
 
 dmapDataTypes = {
     1: 'b',  # byte

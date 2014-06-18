@@ -1,4 +1,4 @@
-from daapserver.daap import do
+from daapserver.daap import DAAPObject
 from daapserver import daap
 
 from flask import Flask, Response, request, send_file
@@ -169,43 +169,45 @@ def create_daap_server(provider, server_name, password=None, cache=True):
     @daap_cache_response
     def server_info():
         data = [
-            do("dmap.status", 200),
-            do("dmap.protocolversion", "2.0.0"),
-            do("daap.protocolversion", "3.0.0"),
-            do("dmap.itemname", server_name),
-            do("dmap.timeoutinterval", 1800),
-            do("dmap.supportsautologout", 1),
-            do("dmap.loginrequired", 1 if password else 0),
-            do("dmap.authenticationmethod", 2 if password else 0),
-            do("dmap.supportsextensions", 1),
-            do("dmap.supportsindex", 1),
-            do("dmap.supportsbrowse", 1),
-            do("dmap.supportsquery", 1),
-            do("dmap.supportspersistentids", 1),
-            do("dmap.databasescount", 1),
-            do("dmap.supportsupdate", 1),
-            do("dmap.supportsresolve", 1)
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.protocolversion", "2.0.0"),
+            DAAPObject("daap.protocolversion", "3.0.0"),
+            DAAPObject("dmap.itemname", server_name),
+            DAAPObject("dmap.timeoutinterval", 1800),
+            DAAPObject("dmap.supportsautologout", 1),
+            DAAPObject("dmap.loginrequired", 1 if password else 0),
+            DAAPObject("dmap.authenticationmethod", 2 if password else 0),
+            DAAPObject("dmap.supportsextensions", 1),
+            DAAPObject("dmap.supportsindex", 1),
+            DAAPObject("dmap.supportsbrowse", 1),
+            DAAPObject("dmap.supportsquery", 1),
+            DAAPObject("dmap.databasescount", 1),
+            DAAPObject("dmap.supportsupdate", 1),
+            DAAPObject("dmap.supportsresolve", 1)
         ]
 
-        if provider.supports_artwork:
-            data += [do("daap.supportsextradata", 1)]
+        if provider.supports_persistent_id:
+            data.append(DAAPObject("dmap.supportspersistentids", 1))
 
-        return ObjectResponse(do("dmap.serverinforesponse", data))
+        if provider.supports_artwork:
+            data.append(DAAPObject("daap.supportsextradata", 1))
+
+        return ObjectResponse(DAAPObject("dmap.serverinforesponse", data))
 
     @app.route("/content-codes", methods=["GET"])
     @daap_cache_response
     def content_codes():
-        children = [ do("dmap.status", 200) ]
-        data = do("dmap.contentcodesresponse", children)
+        children = [ DAAPObject("dmap.status", 200) ]
+        data = DAAPObject("dmap.contentcodesresponse", children)
 
         for code in daap.dmapCodeTypes.keys():
             name, dtype = daap.dmapCodeTypes[code]
 
             children.append(
-                do("dmap.dictionary", [
-                    do("dmap.contentcodesnumber", code),
-                    do("dmap.contentcodesname", name),
-                    do("dmap.contentcodestype", daap.dmapReverseDataTypes[dtype])
+                DAAPObject("dmap.dictionary", [
+                    DAAPObject("dmap.contentcodesnumber", code),
+                    DAAPObject("dmap.contentcodesname", name),
+                    DAAPObject("dmap.contentcodestype", daap.dmapReverseDataTypes[dtype])
                 ])
             )
 
@@ -216,9 +218,9 @@ def create_daap_server(provider, server_name, password=None, cache=True):
     def login():
         session_id = provider.create_session()
 
-        data = do("dmap.loginresponse",[
-            do("dmap.status", 200),
-            do("dmap.sessionid", session_id)
+        data = DAAPObject("dmap.loginresponse",[
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.sessionid", session_id)
         ])
 
         return ObjectResponse(data)
@@ -243,9 +245,9 @@ def create_daap_server(provider, server_name, password=None, cache=True):
     def update(session_id, revision, delta):
         revision = provider.get_revision(session_id, revision, delta)
 
-        data = do("dmap.updateresponse", [
-            do("dmap.status", 200),
-            do("dmap.serverrevision", revision),
+        data = DAAPObject("dmap.updateresponse", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.serverrevision", revision),
         ])
 
         return ObjectResponse(data)
