@@ -22,13 +22,8 @@ def parse_byte_range(byte_range, min_byte=0, max_byte=sys.maxint):
     if not byte_range:
         return min_byte, max_byte
 
-    begin, end = byte_range
-
-    if not begin:
-        begin = min_byte
-
-    if not end:
-        end = max_byte
+    begin = byte_range[0] or min_byte
+    end = byte_range[1] or max_byte
 
     if end < begin:
         raise ValueError("End before begin")
