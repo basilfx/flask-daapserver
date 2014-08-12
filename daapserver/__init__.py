@@ -42,7 +42,8 @@ class ObjectResponse(Response):
         # Instantiate response
         super(ObjectResponse, self).__init__(data.encode(), *args, **kwargs)
 
-def create_daap_server(provider, server_name, password=None, cache=True):
+def create_daap_server(provider, server_name, password=None, cache=True,
+    debug=False):
     """
     Create a DAAP server, based around a Flask application. The server requires
     a content provider, server name and optionally, a password. The content
@@ -58,7 +59,7 @@ def create_daap_server(provider, server_name, password=None, cache=True):
 
     # Create Flask App
     app = Flask(__name__)
-    app.debug = True
+    app.debug = debug
 
     # Setup cache
     if cache:
@@ -91,9 +92,10 @@ def create_daap_server(provider, server_name, password=None, cache=True):
     def daap_unpack_args(func):
         """
         Strip query string arguments and add them to the method as keyword
-        arguments. Since the query string keys are defined, values will be converted
-        to their approriate format. An exception will be thrown in case a requested
-        argument is not available, or if the value could not be converted.
+        arguments. Since the query string keys are defined, values will be
+        converted to their approriate format. An exception will be thrown in
+        case a requested argument is not available, or if the value could not
+        be converted.
         """
 
         # Create a function specific mapping, only for arguments appearing in
@@ -237,7 +239,7 @@ def create_daap_server(provider, server_name, password=None, cache=True):
     @daap_authenticate
     @daap_unpack_args
     def activity(session_id):
-        return Response(None, status=204)
+        return Response(None, status=200)
 
     @app.route("/update", methods=["GET"])
     @daap_authenticate
@@ -256,7 +258,8 @@ def create_daap_server(provider, server_name, password=None, cache=True):
     @daap_authenticate
     def fp_setup():
         """
-        Fairplay validation, as sent by iTunes 11+.
+        Fairplay validation, as sent by iTunes 11+. It will be unlikely this
+        will be ever implemented.
         """
 
         raise NotImplemented
