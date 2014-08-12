@@ -129,6 +129,8 @@ def create_daap_server(provider, server_name, password=None, cache=True,
         """
         Cache object responses if the cache has been initialized. The cache key
         is based on the request path and the semi-constant request arguments.
+        The response is caches for as long as possible, which should not be a
+        problem if the cache is cleared if the provider has new data.
         """
 
         @wraps(func)
@@ -147,7 +149,7 @@ def create_daap_server(provider, server_name, password=None, cache=True,
 
             if value is None:
                 value = func(*args, **kwargs)
-                cache.set(key, value, timeout=1800)
+                cache.set(key, value, timeout=3600 * 6)
             return value
         return _inner if cache else func
 
