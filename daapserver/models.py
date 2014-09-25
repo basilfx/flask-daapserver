@@ -2,36 +2,6 @@ from daapserver import revision, utils
 
 import collections
 
-
-"""
-Server
-    |
-    |
-    -   Database
-            |
-            |
-            -   Items
-            |
-            |
-            -   Containers
-                    |
-                    |
-                    -   Container Items
-
-"databases" -> set
-"database1.items" -> object
-"database1.item1" -> object
-"database1.item2" -> object
-"database1.containers" -> set
-"database1.container1" -> object
-"database1.container1.container_items" -> set
-"database1.container1.container_item1" -> object
-"database1.container1.container_item2" -> object
-"database1.container2" -> set
-"database1.container2.container_item1" -> object
-"database1.container2.container_item2" -> object
-"""
-
 class Object(object):
     def __repr__(self):
         attrs = {}
