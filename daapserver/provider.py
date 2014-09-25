@@ -1,4 +1,4 @@
-from daapserver import structures, responses
+from daapserver import structures, responses, models
 
 import cStringIO
 

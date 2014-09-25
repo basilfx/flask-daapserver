@@ -5,7 +5,7 @@ import uuid
 def generate_persistent_id():
     """
     Generate a persistent ID. This ID is used in the DAAP protocol to uniquely
-    identify objects since they are created.
+    identify objects when they are created.
     """
 
     return ctypes.c_long(uuid.uuid1().int >> 64).value
@@ -35,6 +35,45 @@ def parse_byte_range(byte_range, min_byte=0, max_byte=sys.maxint):
         raise ValueError("End larger than max")
 
     return begin, end
+
+def to_tree(instance, *children):
+    yield repr(instance)
+
+    # Iterate trough each instance child collection
+    for i, item in enumerate(children):
+        name, child = item
+        lines = 0
+
+        yield "|"
+        yield "+---" + name
+
+        if i != len(children) - 1:
+            a = "|"
+        else:
+            a = " "
+
+        # Iterate trough all values of collection of child
+        for j, item in enumerate(child.itervalues()):
+            if j != len(child) - 1:
+                b = "|"
+            else:
+                b = " "
+
+            if j == 0:
+                yield a + "   |"
+
+            # Append prefix to each line
+            for k, line in enumerate(item.to_tree()):
+                lines += 1
+
+                if k == 0:
+                    yield a + "   +---" + line
+                else:
+                    yield a + "   " + b + "   " + line
+
+        # Add extra space if required
+        if len(children) > 1 and i == len(children) - 1 and lines > 1:
+            yield a
 
 class Mapping(object):
 

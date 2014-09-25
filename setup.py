@@ -5,7 +5,7 @@ from distutils.core import setup
 # Setup definitions
 setup(
     name="flask_daapserver",
-    version="1.0",
+    version="2.0",
     description="DAAP server framework implemented with Flask",
     author="Bas Stottelaar",
     author_email="basstottelaar@gmail.com",

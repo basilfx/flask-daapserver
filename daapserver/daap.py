@@ -16,7 +16,6 @@ from daapserver.daap_data import *
 import sys
 import struct
 import logging
-import cython
 
 __all__ = ['DAAPObject', 'DAAPParseCodeTypes']
 
