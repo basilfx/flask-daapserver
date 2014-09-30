@@ -2,24 +2,8 @@ from daapserver import revision, utils
 
 import collections
 
-class Object(object):
-    def __repr__(self):
-        attrs = {}
-
-        # Build attribute map
-        if hasattr(self, "id"):
-            attrs["id"] = self.id
-
-        if hasattr(self, "revision"):
-            attrs["revision"] = self.revision
-
-        # Join attributes to single line
-        attrs = ", ".join([ "%s=%s" % item for item in attrs.iteritems() ])
-
-        # Done
-        return "%s(%s)" % (self.__class__.__name__, attrs)
-
 class Collection(object):
+    __slots__ = ["parent", "clazz", "revision"]
 
     def __init__(self, parent, clazz, revision=None):
         self.parent = parent
@@ -138,16 +122,14 @@ class Collection(object):
     def removed(self, other):
         return other.added(self)
 
-class Server(Object):
+class Server(object):
+    __slots__ = ["storage", "key", "databases"]
 
     def __init__(self, **kwargs):
         self.storage = revision.TreeRevisionStorage()
         self.key = (Server, )
 
         self.databases = Collection(self, Database)
-
-        # Properties
-        self.name = None
 
         # Set properties
         for attr, value in kwargs.iteritems():
@@ -156,7 +138,10 @@ class Server(Object):
     def to_tree(self):
         return utils.to_tree(self, ("Databases", self.databases))
 
-class Database(Object):
+class Database(object):
+    __slots__ = ["storage", "key", "item", "containers", "id", "persistent_id",
+        "name"]
+
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
 
@@ -175,11 +160,17 @@ class Database(Object):
         return utils.to_tree(self, ("Items", self.items),
             ("Containers", self.containers))
 
-class Item(Object):
+class Item(object):
+    __slots__ = ["storage", "key", "id", "persistent_id", "name", "track",
+        "artist", "album", "year", "bitrate", "duration", "file_size",
+        "file_suffix", "album_art"]
+
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
+        self.key = None
 
         # Properties
+        self.id = None
         self.persistent_id = None
         self.name = None
         self.track = None
@@ -196,20 +187,21 @@ class Item(Object):
         for attr, value in kwargs.iteritems():
             setattr(self, attr, value)
 
-    @property
-    def database(self):
-        return self.storage.get((Database, self.database_id))
-
     def to_tree(self):
         return utils.to_tree(self)
 
-class Container(Object):
+class Container(object):
+    __slots__ = ["storage", "key", "container_items", "id", "persistent_id",
+        "name", "parent", "is_smart", "is_base"]
+
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
+        self.key = None
 
         self.container_items = Collection(self, ContainerItem, revision=revision)
 
         # Properties
+        self.id = None
         self.persistent_id = None
         self.name = None
         self.parent = None
@@ -223,11 +215,15 @@ class Container(Object):
     def to_tree(self):
         return utils.to_tree(self, ("Container Items", self.container_items))
 
-class ContainerItem(Object):
+class ContainerItem(object):
+    __slots__ = ["storage", "key", "id", "persistent_id", "item", "order"]
+
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
+        self.key = None
 
         # Properties
+        self.id = None
         self.persistent_id = None
         self.item = None
         self.order = None

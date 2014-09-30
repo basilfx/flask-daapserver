@@ -52,9 +52,9 @@ class RevisionProvider(provider.Provider):
         while True:
             with self.lock:
                 # Decide what to do
-                if random.choice(["add", "add", "del"]) == "add":
+                if random.choice(["add", "add", "add"]) == "add":
                     item = Item(id=counter, artist="SubDaap", album="RevisionServer", name="Item %d" % counter, duration=counter)
-                    container_item = Item(id=counter, item=item)
+                    container_item = ContainerItem(id=counter, item=item)
                     counter += 1
 
                     # Add
@@ -83,7 +83,7 @@ class RevisionProvider(provider.Provider):
             self.ready.clear()
 
             # Wait until next operation
-            gevent.sleep(2)
+            gevent.sleep(5.0)
 
     def wait_for_update(self):
         # In a real server, this should block until an update, and return the

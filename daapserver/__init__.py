@@ -290,7 +290,7 @@ def create_daap_server(provider, server_name, password=None, cache=True,
                 DAAPObject("dmap.containercount", len(database.containers))
             ]
 
-            if provider.supports_persistent_id and database.persistent_id:
+            if provider.supports_persistent_id and database.persistent_id is not None:
                 data.append(DAAPObject("dmap.persistentid", database.persistent_id))
 
             return DAAPObject("dmap.listingitem", data)
@@ -367,25 +367,25 @@ def create_daap_server(provider, server_name, password=None, cache=True,
                 DAAPObject("dmap.itemkind", 2),
             ]
 
-            if provider.supports_persistent_id and item.persistent_id:
+            if provider.supports_persistent_id and item.persistent_id is not None:
                 data.append(DAAPObject("dmap.persistentid", item.persistent_id))
-            if item.name:
+            if item.name is not None:
                 data.append(DAAPObject("dmap.itemname", item.name))
-            if item.track:
+            if item.track is not None:
                 data.append(DAAPObject("daap.songtracknumber", item.track))
-            if item.artist:
+            if item.artist is not None:
                 data.append(DAAPObject("daap.songartist", item.artist))
-            if item.album:
+            if item.album is not None:
                 data.append(DAAPObject("daap.songalbum", item.album))
-            if item.year:
+            if item.year is not None:
                 data.append(DAAPObject("daap.songyear", item.year))
-            if item.bitrate:
+            if item.bitrate is not None:
                 data.append(DAAPObject("daap.songbitrate", item.bitrate))
-            if item.duration:
+            if item.duration is not None:
                 data.append(DAAPObject("daap.songtime", item.duration))
-            if item.file_size:
+            if item.file_size is not None:
                 data.append(DAAPObject("daap.songsize", item.file_size))
-            if item.file_suffix:
+            if item.file_suffix is not None:
                 data.append(DAAPObject("daap.songformat", item.file_suffix))
             if provider.supports_artwork and item.album_art:
                 data.append(DAAPObject("daap.songartworkcount", 1))
@@ -426,11 +426,11 @@ def create_daap_server(provider, server_name, password=None, cache=True,
                 DAAPObject("dmap.parentcontainerid", container.parent.id if container.parent else 0)
             ]
 
-            if provider.supports_persistent_id and container.persistent_id:
+            if provider.supports_persistent_id and container.persistent_id is not None:
                 data.append(DAAPObject("dmap.persistentid", container.persistent_id))
-            if container.is_base:
+            if container.is_base is not None:
                 data.append(DAAPObject("daap.baseplaylist", 1))
-            if container.is_smart:
+            if container.is_smart is not None:
                 data.append(DAAPObject("com.apple.itunes.smart-playlist", 1))
 
             return DAAPObject("dmap.listingitem", data)
@@ -476,7 +476,7 @@ def create_daap_server(provider, server_name, password=None, cache=True,
                 DAAPObject("dmap.containeritemid", container_item.id),
             ]
 
-            if provider.supports_persistent_id and container_item.persistent_id:
+            if provider.supports_persistent_id and container_item.persistent_id is not None:
                 data.append(DAAPObject("dmap.persistentid", container_item.persistent_id))
             #if item.name:
             #    data.append(DAAPObject("daap.sortname", item.name))
