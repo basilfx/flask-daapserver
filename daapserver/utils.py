@@ -1,6 +1,29 @@
 import sys
-import ctypes
 import uuid
+import ctypes
+
+def diff(new, old):
+    """
+    Compute the difference in items of two revisioned collections. If only
+    `new' is specified, it is assumed it's not an update. If both are set, first
+    the removed items are returned. Otherwise, the added and edited ones.
+    """
+
+    added = set()
+    removed = set()
+
+    # Take either added or removed, but not both
+    if new and old:
+        is_update = True
+        removed = new.removed(old)
+
+        if not removed:
+            added = new.added(old) | new.edited(old)
+    else:
+        is_update = False
+        added = new
+
+    return added, removed, is_update
 
 def generate_persistent_id():
     """
@@ -37,6 +60,14 @@ def parse_byte_range(byte_range, min_byte=0, max_byte=sys.maxint):
     return begin, end
 
 def to_tree(instance, *children):
+    """
+    Generate tree structure of instance, and children. Each child item should be
+    a (name, child) tuple, where name will cover all the children.
+
+    This method yields it results, instead of returning them.
+    """
+
+    # Yield representation of self
     yield repr(instance)
 
     # Iterate trough each instance child collection
@@ -74,42 +105,3 @@ def to_tree(instance, *children):
         # Add extra space if required
         if len(children) > 1 and i == len(children) - 1 and lines > 1:
             yield a
-
-class Mapping(object):
-
-    def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
-
-    def __contains__(self, key):
-        try:
-            self[key]
-        except KeyError:
-            return False
-        else:
-            return True
-
-    def iterkeys(self):
-        return iter(self)
-
-    def itervalues(self):
-        for key in self:
-            yield self[key]
-
-    def iteritems(self):
-        for key in self:
-            yield (key, self[key])
-
-    def keys(self):
-        return list(self)
-
-    def items(self):
-        return [(key, self[key]) for key in self]
-
-    def values(self):
-        return [self[key] for key in self]
-
-    # Mappings are not hashable by default, but subclasses can change this
-    __hash__ = None

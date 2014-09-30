@@ -8,6 +8,7 @@ from werkzeug import http
 
 from functools import wraps
 
+import hashlib
 import inspect
 import re
 
@@ -135,16 +136,22 @@ def create_daap_server(provider, server_name, password=None, cache=True,
 
         @wraps(func)
         def _inner(*args, **kwargs):
-            # Quick-and-dirty request hash, but it works. It's faster than
-            # string joining of parameters, outweighing the risk on collisions.
-            hash_value = 0
+            # Create hash key via hashlib. We use MD5 since it is slightly
+            # faster than SHA1. Note that we don't require cryptographically
+            # strong hashes -- we just want to have a short and computationally
+            # unique key.
+            key = hashlib.md5()
 
-            for k,v in request.args.iteritems():
+            # Add basic info
+            key.update(func.__name__)
+            key.update(request.path)
+
+            for k, v in request.args.iteritems():
                 if k not in QS_IGNORE_CACHE:
-                    hash_value ^= hash(v)
+                    key.update(v)
 
             # Hit the cache
-            key = hash(func.__name__), hash(request.path), hash_value
+            key = key.digest()
             value = cache.get(key)
 
             if value is None:
@@ -204,7 +211,7 @@ def create_daap_server(provider, server_name, password=None, cache=True,
         children = [ DAAPObject("dmap.status", 200) ]
         data = DAAPObject("dmap.contentcodesresponse", children)
 
-        for code in daap.dmapCodeTypes.keys():
+        for code in daap.dmapCodeTypes.iterkeys():
             name, dtype = daap.dmapCodeTypes[code]
 
             children.append(
@@ -271,7 +278,36 @@ def create_daap_server(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def databases(session_id, revision, delta):
-        data = provider.get_databases(session_id, revision, delta)
+        new, old = provider.get_databases(session_id, revision, delta)
+        added, removed, is_update = utils.diff(new, old)
+
+        # Single database response
+        def _database(database):
+            data = [
+                DAAPObject("dmap.itemid", database.id),
+                DAAPObject("dmap.itemname", database.name),
+                DAAPObject("dmap.itemcount", len(database.items)),
+                DAAPObject("dmap.containercount", len(database.containers))
+            ]
+
+            if provider.supports_persistent_id and database.persistent_id:
+                data.append(DAAPObject("dmap.persistentid", database.persistent_id))
+
+            return DAAPObject("dmap.listingitem", data)
+
+        # Databases response
+        data = DAAPObject("daap.serverdatabases", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", int(is_update)),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing",(
+                _database(new[k]) for k in added
+            )),
+            DAAPObject("dmap.deletedidlisting", (
+                DAAPObject("dmap.itemid", k) for k in removed
+            ))
+        ])
 
         return ObjectResponse(data)
 
@@ -321,7 +357,55 @@ def create_daap_server(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def database_items(database_id, session_id, revision, delta, type):
-        data = provider.get_items(session_id, database_id, revision, delta)
+        new, old = provider.get_items(session_id, database_id, revision, delta)
+        added, removed, is_update = utils.diff(new, old)
+
+        # Single item response
+        def _item(item):
+            data = [
+                DAAPObject("dmap.itemid", item.id),
+                DAAPObject("dmap.itemkind", 2),
+            ]
+
+            if provider.supports_persistent_id and item.persistent_id:
+                data.append(DAAPObject("dmap.persistentid", item.persistent_id))
+            if item.name:
+                data.append(DAAPObject("dmap.itemname", item.name))
+            if item.track:
+                data.append(DAAPObject("daap.songtracknumber", item.track))
+            if item.artist:
+                data.append(DAAPObject("daap.songartist", item.artist))
+            if item.album:
+                data.append(DAAPObject("daap.songalbum", item.album))
+            if item.year:
+                data.append(DAAPObject("daap.songyear", item.year))
+            if item.bitrate:
+                data.append(DAAPObject("daap.songbitrate", item.bitrate))
+            if item.duration:
+                data.append(DAAPObject("daap.songtime", item.duration))
+            if item.file_size:
+                data.append(DAAPObject("daap.songsize", item.file_size))
+            if item.file_suffix:
+                data.append(DAAPObject("daap.songformat", item.file_suffix))
+            if provider.supports_artwork and item.album_art:
+                data.append(DAAPObject("daap.songartworkcount", 1))
+                data.append(DAAPObject("daap.songextradata", 1))
+
+            return DAAPObject("dmap.listingitem", data)
+
+        # Items response
+        data = DAAPObject("daap.databasesongs", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", int(is_update)),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing", (
+                _item(new[k]) for k in added
+            )),
+            DAAPObject("dmap.deletedidlisting", (
+                DAAPObject("dmap.itemid", k) for k in removed
+            ))
+        ])
 
         return ObjectResponse(data)
 
@@ -330,7 +414,40 @@ def create_daap_server(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def database_containers(database_id, session_id, revision, delta):
-        data = provider.get_containers(session_id, database_id, revision, delta)
+        new, old = provider.get_containers(session_id, database_id, revision, delta)
+        added, removed, is_update = utils.diff(new, old)
+
+        # Single container response
+        def _container(container):
+            data = [
+                DAAPObject("dmap.itemid", container.id),
+                DAAPObject("dmap.itemname", container.name),
+                DAAPObject("dmap.itemcount", len(container.container_items)),
+                DAAPObject("dmap.parentcontainerid", container.parent.id if container.parent else 0)
+            ]
+
+            if provider.supports_persistent_id and container.persistent_id:
+                data.append(DAAPObject("dmap.persistentid", container.persistent_id))
+            if container.is_base:
+                data.append(DAAPObject("daap.baseplaylist", 1))
+            if container.is_smart:
+                data.append(DAAPObject("com.apple.itunes.smart-playlist", 1))
+
+            return DAAPObject("dmap.listingitem", data)
+
+        # Containers response
+        data = DAAPObject("daap.databaseplaylists", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", int(is_update)),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing", (
+                _container(new[k]) for k in added
+            )),
+            DAAPObject("dmap.deletedidlisting", (
+                DAAPObject("dmap.itemid", k) for k in removed
+            ))
+        ])
 
         return ObjectResponse(data)
 
@@ -346,7 +463,44 @@ def create_daap_server(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def database_container_item(database_id, container_id, session_id, revision, delta, type):
-        data = provider.get_container_items(session_id, database_id, container_id, revision, delta)
+        new, old = provider.get_container_items(session_id, database_id, container_id, revision, delta)
+        added, removed, is_update = utils.diff(new, old)
+
+        # Single container response
+        def _container_item(container_item):
+            item = container_item.item
+
+            data = [
+                DAAPObject("dmap.itemkind", 2),
+                DAAPObject("dmap.itemid", item.id),
+                DAAPObject("dmap.containeritemid", container_item.id),
+            ]
+
+            if provider.supports_persistent_id and container_item.persistent_id:
+                data.append(DAAPObject("dmap.persistentid", container_item.persistent_id))
+            #if item.name:
+            #    data.append(DAAPObject("daap.sortname", item.name))
+            #if item.album:
+            #    data.append(DAAPObject("daap.sortalbum", item.album))
+            #if item.artist:
+            #    data.append(DAAPObject("daap.sortartist", item.artist))
+            #    data.append(DAAPObject("daap.sortalbumartist", item.artist))
+
+            return DAAPObject("dmap.listingitem", data)
+
+        # Containers response
+        data = DAAPObject("daap.playlistsongs", [
+            DAAPObject("dmap.status", 200),
+            DAAPObject("dmap.updatetype", int(is_update)),
+            DAAPObject("dmap.specifiedtotalcount", len(new)),
+            DAAPObject("dmap.returnedcount", len(added)),
+            DAAPObject("dmap.listing", (
+                _container_item(new[k]) for k in added
+            )),
+            DAAPObject("dmap.deletedidlisting", (
+                DAAPObject("dmap.itemid", k) for k in removed
+            ))
+        ])
 
         return ObjectResponse(data)
 

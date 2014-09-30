@@ -1,22 +1,34 @@
-from daapserver import responses
+from datetime import datetime
 
 import cStringIO
 
 __all__ = ["LocalFileProvider", "Provider", "Session"]
 
+class DummyLock(object):
+    def __enter__(self):
+        pass
+
+    def __exit__(self, typ, value, traceback):
+        pass
+
+
 class Session(object):
-    __slots__ = ["revision"]
+    __slots__ = ["revision", "since"]
 
     def __init__(self):
-        self.revision = 1
+        self.revision = 0
+        self.since = datetime.now()
 
 
 class Provider(object):
 
+    # Class type to use for sessions
     session_class = Session
 
+    # Whether to artwork is supported
     supports_artwork = False
 
+    # Whether persistent IDs are supported
     supports_persistent_id = False
 
     def __init__(self):
@@ -26,6 +38,7 @@ class Provider(object):
         self.server = None
         self.sessions = {}
         self.session_counter = 0
+        self.lock = DummyLock()
 
     def create_session(self):
         """
@@ -52,22 +65,27 @@ class Provider(object):
         session = self.sessions[session_id]
 
         if delta == revision:
-            # Increment revision, but never decrement.
+            # Increment revision. Never decrement.
             session.revision = max(session.revision, revision)
+
+            # Check sessions.
             self.check_sessions()
 
             # Wait for next revision
             next_revision = self.wait_for_update()
         else:
-            next_revision = min(self.server.manager.revision, revision + 1)
+            next_revision = self.server.storage.revision
 
         return next_revision
 
     def check_sessions(self):
-        lowest_revision = min([ session.revision for session in self.sessions.itervalues() ])
+        lowest_revision = min(
+             session.revision for session in self.sessions.itervalues())
 
-        if lowest_revision == self.server.manager.revision:
-            self.server.manager.commit()
+        # Remove all old revision history
+        if lowest_revision == self.server.storage.revision:
+            with self.lock:
+                self.server.storage.clean(lowest_revision)
 
     def wait_for_update(self):
         """
@@ -85,10 +103,10 @@ class Provider(object):
             new = self.server.databases
             old = None
         else:
-            new = self.server.get_revision(revision).databases
-            old = self.server.get_revision(delta).databases
+            new = self.server.databases(revision)
+            old = self.server.databases(delta)
 
-        return responses.databases(new, old)
+        return new, old
 
     def get_containers(self, session_id, database_id, revision, delta):
         """
@@ -100,10 +118,10 @@ class Provider(object):
             new = self.server.databases[database_id].containers
             old = None
         else:
-            new = self.server.get_revision(revision).databases[database_id].containers
-            old = self.server.get_revision(delta).database[database_id].containers
+            new = self.server.databases(revision)[database_id].containers(revision)
+            old = self.server.databases(delta)[database_id].containers(delta)
 
-        return responses.containers(new, old)
+        return new, old
 
     def get_container_items(self, session_id, database_id, container_id, revision, delta):
         """
@@ -115,10 +133,10 @@ class Provider(object):
             new = self.server.databases[database_id].containers[container_id].container_items
             old = None
         else:
-            new = self.server.get_revision(revision).databases[database_id].containers[container_id].container_items
-            old = self.server.get_revision(delta).databases[database_id].containers[container_id].container_items
+            new = self.server.databases(revision)[database_id].containers(revision)[container_id].container_items(revision)
+            old = self.server.databases(delta)[database_id].containers(delta)[container_id].container_items(delta)
 
-        return responses.container_items(new, old)
+        return new, old
 
     def get_items(self, session_id, database_id, revision, delta):
         """
@@ -129,10 +147,10 @@ class Provider(object):
             new = self.server.databases[database_id].items
             old = None
         else:
-            new = self.server.get_revision(revision).databases[database_id].items
-            old = self.server.get_revision(delta).databases[database_id].items
+            new = self.server.databases(revision)[database_id].items(revision)
+            old = self.server.databases(delta)[database_id].items(delta)
 
-        return responses.items(new, old)
+        return new, old
 
     def get_item(self, session_id, database_id, item_id, byte_range=None):
         """
