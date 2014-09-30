@@ -229,10 +229,10 @@ class TreeRevisionStorageTest(unittest.TestCase):
         self.assertEqual(storage.get("parent", revision=2), set([2]))
         self.assertEqual(storage.get("parent", revision=3), set([]))
 
-        storage.clean(up_to_including_revision=1)
+        storage.clean(up_to_revision=2)
 
         self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, DELETE)
+        self.assertEqual(storage.last_operation, NOOP)
 
         with self.assertRaises(KeyError):
             storage.get("parent", revision=1)
@@ -242,7 +242,7 @@ class TreeRevisionStorageTest(unittest.TestCase):
         storage.clean()
 
         self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, DELETE)
+        self.assertEqual(storage.last_operation, NOOP)
 
         with self.assertRaises(KeyError):
             storage.get("parent", revision=1)

@@ -48,15 +48,30 @@ class TreeRevisionStorage(object):
         """
         self.last_operation = NOOP
 
-    def clean(self, up_to_including_revision=None):
+    def clean(self, up_to_revision=None):
         """
-        Clean all revisions up to and including the given revision, or to the
-        revision before the current one.
+        Clean all revision history up the given revision, or up to to the
+        current revision.
         """
 
-        # Cleanup old revision items. Iterates over every key
+        # Take current revision minus one if none specified.
+        if up_to_revision is None:
+            up_to_revision = self.revision - 1
+
+        # Cleanup old revision items. Iterates over every key.
         for key, items in self.storage.iteritems():
-            items[:] = items[self.get_index(key, up_to_including_revision):]
+            if items:
+                start = self.get_index(key, up_to_revision)
+
+                if items[start - 1][1] != DELETE:
+                    start -= 1
+
+                if start >= 0:
+                    items[:] = items[start:]
+
+        # Commit after finishing, so next operation will certainly not affect
+        # the current revision.
+        self.commit()
 
     def clear(self, parent_key):
         """
@@ -89,6 +104,20 @@ class TreeRevisionStorage(object):
                 (self.revision, EDIT, set()))
             self.storage[(KEY, parent_key)].append(
                 (self.revision, EDIT, set()))
+
+    def info(self, parent_key, child_key, revision):
+        """
+        Return the revision number and the last operation that is in the
+        history of a given `child_key' of a `parent_key'.
+        """
+
+        key = (parent_key, child_key)
+
+        # Find item
+        item = self.storage[key][self.get_index(key, revision) - 1]
+
+        # Return the revision and last operation
+        return item[0], item[1]
 
     def get(self, parent_key, child_key=None, revision=None, keys=False):
         """
@@ -209,7 +238,9 @@ class TreeRevisionStorage(object):
 
         # Create or copy references
         if self.storage[(KEY, parent_key)]:
-            if new_revision:
+            last_revision = self.storage[(KEY, parent_key)][-1][0]
+
+            if new_revision or self.revision != last_revision:
                 self.storage[(VALUE, parent_key)].append((self.revision, EDIT,
                     self.storage[(VALUE, parent_key)][-1][2].copy()))
                 self.storage[(KEY, parent_key)].append((self.revision, EDIT,
