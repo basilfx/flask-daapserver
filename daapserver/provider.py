@@ -2,7 +2,7 @@ from datetime import datetime
 
 import cStringIO
 
-__all__ = ["LocalFileProvider", "Provider", "Session"]
+__all__ = ("LocalFileProvider", "Provider", "Session")
 
 class DummyLock(object):
     def __enter__(self):
@@ -13,7 +13,7 @@ class DummyLock(object):
 
 
 class Session(object):
-    __slots__ = ["revision", "since"]
+    __slots__ = ("revision", "since")
 
     def __init__(self):
         self.revision = 0

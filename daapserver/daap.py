@@ -46,8 +46,8 @@ def DAAPParseCodeTypes(treeroot):
                     try:
                         dtype = dmapDataTypes[info.value]
                     except KeyError:
-                        logger.debug("Unknown data type %s for code %s, defaulting to s",
-                            info.value, name)
+                        logger.debug("Unknown data type %s for code %s, " \
+                            "defaulting to s", info.value, name)
                         dtype = "s"
                 else:
                     raise ValueError("Unexpected code %s at level 2" %
@@ -63,10 +63,11 @@ def DAAPParseCodeTypes(treeroot):
             else:
                 logger.debug("Missing information, not adding entry")
         else:
-            raise ValueError("Unexpected code %s at level 1" % info.get_code_name())
+            raise ValueError("Unexpected code %s at level 1" %
+                info.get_code_name())
 
 class DAAPObject(object):
-    __slots__ = ["code", "value", "type", "itype"]
+    __slots__ = ("code", "value", "type", "itype")
 
     def __init__(self, code=None, value=None):
         if code:
@@ -132,7 +133,8 @@ class DAAPObject(object):
 
             # Pack data: 4 byte code, 4 byte length, length bytes of value
             try:
-                return struct.pack("!4sI%ds" % length, self.code, length, str(value))
+                return struct.pack("!4sI%ds" % length, self.code, length,
+                    str(value))
             except struct.error as e:
                 raise ValueError("Error while packing code '%s' ('%s'): %s" %
                     (self.code, self.get_code_name(), e))

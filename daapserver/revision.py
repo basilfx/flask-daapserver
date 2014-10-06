@@ -1,17 +1,17 @@
 import collections
 import unittest
 
-NOOP = -1
-ADD = 1
-EDIT = 2
-DELETE = 4
+NOOP = 0x00
+ADD = 0x01
+EDIT = 0x02
+DELETE = 0x04
 
-VALUE = 1
-KEY = 2
+KEY = 0x01
 
 class TreeRevisionStorage(object):
     """
-    Key-value storage with revisioning.
+    Key-value storage with revisioning. Keys are integer-only, and child keys
+    are limited to 24 bits
     """
 
     def __init__(self):
@@ -34,7 +34,7 @@ class TreeRevisionStorage(object):
         while low < high:
             middle = (low + high) // 2
 
-            if self.storage[key][middle][0] > revision:
+            if (self.storage[key][middle][0] >> 4) > revision:
                 high = middle
             else:
                 low = middle + 1
@@ -63,7 +63,7 @@ class TreeRevisionStorage(object):
             if items:
                 start = self.get_index(key, up_to_revision)
 
-                if items[start - 1][1] != DELETE:
+                if not items[start - 1][0] & DELETE:
                     start -= 1
 
                 if start >= 0:
@@ -79,31 +79,27 @@ class TreeRevisionStorage(object):
         parent.
         """
 
-        if self.storage[(KEY, parent_key)]:
-            if self.storage[(KEY, parent_key)][-1][1] == DELETE:
-                raise KeyError("Item marked as deleted: %s" % (parent_key, ))
+        key = (parent_key << 8) + KEY
+
+        if self.storage[key]:
+            if self.storage[key][-1][0] & DELETE:
+                raise KeyError("Item marked as deleted: %s" % parent_key)
         else:
-            raise KeyError("Item not found: %s" % (parent_key, ))
+            raise KeyError("Item not found: %s" % parent_key)
 
         if self.last_operation != DELETE:
             self.last_operation = DELETE
             self.revision += 1
 
         # Delete children and update references
-        for child_key in self.storage[(KEY, parent_key)][-1][2]:
-            self.storage[(parent_key, child_key)].append(
-                (self.revision, DELETE, None))
+        for child_key in self.storage[key][-1][1]:
+            self.storage[(parent_key << 24) + child_key].append(
+                (self.revision << 4 | DELETE, None))
 
-        if self.storage[(VALUE, parent_key)][-1][0] == self.revision:
-            self.storage[(VALUE, parent_key)][-1] = \
-                (self.revision, EDIT, set())
-            self.storage[(KEY, parent_key)][-1] = \
-                (self.revision, EDIT, set())
+        if (self.storage[key][-1][0] >> 4) == self.revision:
+            self.storage[key][-1] = (self.revision << 4 | EDIT, set())
         else:
-            self.storage[(VALUE, parent_key)].append(
-                (self.revision, EDIT, set()))
-            self.storage[(KEY, parent_key)].append(
-                (self.revision, EDIT, set()))
+            self.storage[key].append((self.revision << 4 | EDIT, set()))
 
     def info(self, parent_key, child_key, revision):
         """
@@ -111,15 +107,15 @@ class TreeRevisionStorage(object):
         history of a given `child_key' of a `parent_key'.
         """
 
-        key = (parent_key, child_key)
+        key = (parent_key << 24) + child_key
 
         # Find item
         item = self.storage[key][self.get_index(key, revision) - 1]
 
         # Return the revision and last operation
-        return item[0], item[1]
+        return item[0] >> 4, item[0] & 0x0F
 
-    def get(self, parent_key, child_key=None, revision=None, keys=False):
+    def get(self, parent_key, child_key=None, revision=None):
         """
         Get a given item, optionally at a specific revision number. If
         `child_key' is None and `keys' is True, the keys stored under
@@ -127,12 +123,12 @@ class TreeRevisionStorage(object):
         """
 
         # Build lookup key
-        key = (KEY if keys else VALUE, parent_key) \
-            if child_key is None else (parent_key, child_key)
+        key = (parent_key << 8) + KEY \
+            if child_key is None else (parent_key << 24) + child_key
 
         # Check if there are any items stored.
         if not self.storage[key]:
-            raise KeyError("No item stored for key: %s" % (key, ))
+            raise KeyError("No item stored for key: %s" % key)
 
         # Optimize for no revision, since it is the last one in the list
         if revision is None:
@@ -141,89 +137,85 @@ class TreeRevisionStorage(object):
             if revision > self.revision:
                 raise KeyError("Requested revision %d greater than current " \
                     "revision %d" % (revision, self.revision))
-            elif self.storage[key][0][0] > revision:
+            elif (self.storage[key][0][0] >> 4) > revision:
                 raise KeyError("Requested revision %d lower than first " \
-                    "element revision %d" % (revision, self.storage[key][0][0]))
+                    "element revision %d" % (revision,
+                        self.storage[key][0][0] >> 4))
 
             # Find item with binary search
             item = self.storage[key][self.get_index(key, revision) - 1]
 
         # Check if items is marked as deleted
-        if item[1] == DELETE:
-            raise KeyError("Item marked as deleted: %s" % (key, ))
+        if item[0] & DELETE:
+            raise KeyError("Item marked as deleted: %s" % key)
 
-        return item[2]
+        return item[1]
 
     def delete(self, parent_key, child_key=None):
         """
         Delete a given item.
         """
 
+        key = (parent_key << 8) + KEY
+
         # Remove all items individually
         if child_key is None:
-            if self.storage[(KEY, parent_key)]:
-                if self.storage[(KEY, parent_key)][-1][1] == DELETE:
-                    raise KeyError("Item marked as deleted: %s" %
-                        (parent_key, ))
+            if self.storage[key]:
+                if self.storage[key][-1][0] & DELETE:
+                    raise KeyError("Item marked as deleted: %s" % parent_key)
             else:
-                raise KeyError("Item not found: %s" % (parent_key, ))
+                raise KeyError("Item not found: %s" % parent_key)
 
             if self.last_operation != DELETE:
                 self.last_operation = DELETE
                 self.revision += 1
 
             # Delete children and update references
-            for child_key in self.storage[(KEY, parent_key)][-1][2]:
-                self.storage[(parent_key, child_key)].append(
-                    (self.revision, DELETE, None))
+            for child_key in self.storage[key][-1][1]:
+                self.storage[(parent_key << 24) + child_key].append(
+                    (self.revision << 4 | DELETE, None))
 
-            if self.storage[(VALUE, parent_key)][-1][0] == self.revision:
-                self.storage[(VALUE, parent_key)][-1] = \
-                    (self.revision, DELETE, None)
-                self.storage[(KEY, parent_key)][-1] = \
-                    (self.revision, DELETE, None)
+            if (self.storage[key][-1][0] >> 4) == self.revision:
+                self.storage[key][-1] = (self.revision << 4 | DELETE, None)
             else:
-                self.storage[(VALUE, parent_key)].append(
-                    (self.revision, DELETE, None))
-                self.storage[(KEY, parent_key)].append(
-                    (self.revision, DELETE, None))
+                self.storage[key].append((self.revision << 4 | DELETE, None))
         else:
-            if self.storage[(parent_key, child_key)]:
-                if self.storage[(parent_key, child_key)][-1][1] == DELETE:
-                    raise KeyError("Item marked as deleted: %s" %
-                        ((parent_key, child_key), ))
+            original_child_key = child_key
+            child_key = (parent_key << 24) + child_key
+
+            if self.storage[child_key]:
+                if self.storage[child_key][-1][0] & DELETE:
+                    raise KeyError("Item marked as deleted: %s" % child_key)
             else:
-                raise KeyError("Item not found: %s" %
-                    ((parent_key, child_key), ))
+                raise KeyError("Item not found: %s" % child_key)
 
             if self.last_operation != DELETE:
                 self.last_operation = DELETE
                 self.revision += 1
 
             # Copy references
-            if self.storage[(VALUE, parent_key)][-1][0] != self.revision:
-                self.storage[(VALUE, parent_key)].append((self.revision, EDIT,
-                    self.storage[(VALUE, parent_key)][-1][2].copy()))
-                self.storage[(KEY, parent_key)].append((self.revision, EDIT,
-                    self.storage[(KEY, parent_key)][-1][2].copy()))
+            if (self.storage[key][-1][0] >> 4) != self.revision:
+                self.storage[key].append((self.revision << 4 | EDIT,
+                    self.storage[key][-1][1].copy()))
 
             # Delete child and update references
-            child_value = self.storage[(parent_key, child_key)][-1][2]
-
-            self.storage[(VALUE, parent_key)][-1][2].remove(child_value)
-            self.storage[(KEY, parent_key)][-1][2].remove(child_key)
-
-            self.storage[(parent_key, child_key)].append(
-                (self.revision, DELETE, None))
+            self.storage[key][-1][1].remove(original_child_key)
+            self.storage[child_key].append((self.revision << 4 | DELETE, None))
 
     def set(self, parent_key, child_key, child_value):
         """
         Add or edit an item.
         """
 
+        key = (parent_key << 8) + KEY
+
+        original_child_key = child_key
+        child_key = (parent_key << 24) + child_key
+
         # Check for existing item
-        if (not self.storage[(parent_key, child_key)] or
-            self.storage[(parent_key, child_key)][-1][1] == DELETE):
+        if (not self.storage[child_key] or
+            self.storage[child_key][-1][0] & DELETE):
+
             operation = ADD
         else:
             operation = EDIT
@@ -237,29 +229,18 @@ class TreeRevisionStorage(object):
             new_revision = False
 
         # Create or copy references
-        if self.storage[(KEY, parent_key)]:
-            last_revision = self.storage[(KEY, parent_key)][-1][0]
+        if self.storage[key]:
+            last_revision = (self.storage[key][-1][0] >> 4)
 
             if new_revision or self.revision != last_revision:
-                self.storage[(VALUE, parent_key)].append((self.revision, EDIT,
-                    self.storage[(VALUE, parent_key)][-1][2].copy()))
-                self.storage[(KEY, parent_key)].append((self.revision, EDIT,
-                    self.storage[(KEY, parent_key)][-1][2].copy()))
+                self.storage[key].append((self.revision << 4 | EDIT,
+                    self.storage[key][-1][1].copy()))
         else:
-            self.storage[(VALUE, parent_key)].append(
-                (self.revision, EDIT, set()))
-            self.storage[(KEY, parent_key)].append(
-                (self.revision, EDIT, set()))
+            self.storage[key].append((self.revision << 4 | EDIT, set()))
 
         # Set item and update references
         if operation == ADD:
-            self.storage[(VALUE, parent_key)][-1][2].add(child_value)
-            self.storage[(KEY, parent_key)][-1][2].add(child_key)
-        elif operation == EDIT:
-            old_child_value = self.storage[(parent_key, child_key)][-1][2]
+            self.storage[key][-1][1].add(original_child_key)
 
-            self.storage[(VALUE, parent_key)][-1][2].remove(old_child_value)
-            self.storage[(VALUE, parent_key)][-1][2].add(child_value)
-
-        self.storage[(parent_key, child_key)].append(
-            (self.revision, operation, child_value))
+        self.storage[child_key].append(
+            (self.revision << 4 | operation, child_value))

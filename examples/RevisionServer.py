@@ -52,7 +52,7 @@ class RevisionProvider(provider.Provider):
         while True:
             with self.lock:
                 # Decide what to do
-                if random.choice(["add", "add", "add"]) == "add":
+                if random.choice(["add", "add", "add", "del"]) == "add":
                     item = Item(id=counter, artist="SubDaap", album="RevisionServer", name="Item %d" % counter, duration=counter)
                     container_item = ContainerItem(id=counter, item=item)
                     counter += 1

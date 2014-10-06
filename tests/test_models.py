@@ -100,3 +100,29 @@ class ModelsTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             database.items.add(item)
+
+    def test_diff(self):
+        server = Server()
+
+        database = Database()
+        database.id = 1
+        database.name = "Database A"
+        server.databases.add(database)
+
+        item = Item()
+        item.id = 2
+        item.name = "Item A"
+        database.items.add(item)
+
+        item = Item()
+        item.id = 2
+        item.name = "Item A, version 2"
+        database.items.add(item)
+
+        self.assertEqual(server.storage.revision, 2)
+
+        items_1 = database.items(revision=1)
+        items_2 = database.items(revision=2)
+
+        self.assertEqual(items_2.edited(items_1), set([2]))
+
