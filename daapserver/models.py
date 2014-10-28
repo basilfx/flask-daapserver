@@ -2,6 +2,11 @@ from daapserver import revision, utils
 
 import collections
 
+KEY_DATABASES = 0x01
+KEY_ITEMS = 0x02
+KEY_CONTAINERS = 0x03
+KEY_CONTAINER_ITEMS = 0x04
+
 class Collection(object):
     __slots__ = ("parent", "key", "revision")
 
@@ -19,7 +24,7 @@ class Collection(object):
         if revision == self.revision:
             return self
 
-        return Collection(self.parent, self.key, revision=revision)
+        return self.__class__(self.parent, self.key, revision=revision)
 
     def __getitem__(self, key):
         """
@@ -91,14 +96,14 @@ class Collection(object):
 
     def itervalues(self):
         try:
-            items = self.parent.storage.get((self.parent.key << 8) + self.key,
+            keys = self.parent.storage.get((self.parent.key << 8) + self.key,
                 revision=self.revision)
         except KeyError:
-            items = []
+            keys = []
 
         # Yield each item
-        for item in items:
-            yield self[item]
+        for key in keys:
+            yield self[key]
 
     def edited(self, other):
         key = (self.parent.key << 8) + self.key
@@ -123,16 +128,15 @@ class Collection(object):
 class Server(object):
     __slots__ = ("storage", "key", "id", "databases")
 
+    collection_class = Collection
+
     def __init__(self, **kwargs):
         self.storage = revision.TreeRevisionStorage()
         self.key = 0
-        self.id = 0
 
-        self.databases = Collection(self, 0x01)
+        self.id = None
 
-        # Set properties
-        for attr, value in kwargs.iteritems():
-            setattr(self, attr, value)
+        self.databases = self.collection_class(self, KEY_DATABASES)
 
     def to_tree(self):
         return utils.to_tree(self, ("Databases", self.databases))
@@ -141,19 +145,19 @@ class Database(object):
     __slots__ = ("storage", "key", "items", "containers", "id", "persistent_id",
         "name")
 
+    collection_class = Collection
+
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
+        self.key = 0
 
-        self.items = Collection(self, 0x02, revision=revision)
-        self.containers = Collection(self, 0x03, revision=revision)
-
-        # Properties
+        self.id = None
         self.persistent_id = None
         self.name = None
 
-        # Set properties
-        for attr, value in kwargs.iteritems():
-            setattr(self, attr, value)
+        self.items = self.collection_class(self, KEY_ITEMS, revision=revision)
+        self.containers = self.collection_class(self, KEY_CONTAINERS,
+            revision=revision)
 
     def to_tree(self, indent=0):
         return utils.to_tree(self, ("Items", self.items),
@@ -166,9 +170,8 @@ class Item(object):
 
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
-        self.key = None
+        self.key = 0
 
-        # Properties
         self.id = None
         self.persistent_id = None
         self.name = None
@@ -176,18 +179,14 @@ class Item(object):
         self.artist = None
         self.album = None
         self.year = None
-        self.genre = None
         self.bitrate = None
         self.duration = None
+        self.file_size = None
         self.file_name = None
         self.file_type = None
-        self.file_size = None
         self.file_suffix = None
         self.album_art = None
-
-        # Set properties
-        for attr, value in kwargs.iteritems():
-            setattr(self, attr, value)
+        self.genre = None
 
     def to_tree(self):
         return utils.to_tree(self)
@@ -196,43 +195,36 @@ class Container(object):
     __slots__ = ("storage", "key", "container_items", "id", "persistent_id",
         "name", "parent", "is_smart", "is_base")
 
+    collection_class = Collection
+
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
-        self.key = None
+        self.key = 0
 
-        self.container_items = Collection(self, 0x04, revision=revision)
-
-        # Properties
         self.id = None
         self.persistent_id = None
         self.name = None
         self.parent = None
-        self.is_smart = False
-        self.is_base = False
+        self.is_smart = None
+        self.is_base = None
 
-        # Set properties
-        for attr, value in kwargs.iteritems():
-            setattr(self, attr, value)
+        self.container_items = self.collection_class(self, KEY_CONTAINER_ITEMS,
+            revision=revision)
 
     def to_tree(self):
         return utils.to_tree(self, ("Container Items", self.container_items))
 
 class ContainerItem(object):
-    __slots__ = ("storage", "key", "id", "persistent_id", "item", "order")
+    __slots__ = ("storage", "key", "id", "persistent_id", "item_id", "order")
 
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
-        self.key = None
+        self.key = 0
 
-        # Properties
         self.id = None
         self.persistent_id = None
-        self.item = None
+        self.item_id = None
         self.order = None
-
-        # Set properties
-        for attr, value in kwargs.iteritems():
-            setattr(self, attr, value)
 
     def to_tree(self):
         return utils.to_tree(self)

@@ -301,7 +301,7 @@ def create_daap_server(provider, server_name, password=None, cache=True,
             DAAPObject("dmap.updatetype", int(is_update)),
             DAAPObject("dmap.specifiedtotalcount", len(new)),
             DAAPObject("dmap.returnedcount", len(added)),
-            DAAPObject("dmap.listing",(
+            DAAPObject("dmap.listing", (
                 _database(new[k]) for k in added
             )),
             DAAPObject("dmap.deletedidlisting", (
@@ -468,11 +468,9 @@ def create_daap_server(provider, server_name, password=None, cache=True,
 
         # Single container response
         def _container_item(container_item):
-            item = container_item.item
-
             data = [
                 DAAPObject("dmap.itemkind", 2),
-                DAAPObject("dmap.itemid", item.id),
+                DAAPObject("dmap.itemid", container_item.item_id),
                 DAAPObject("dmap.containeritemid", container_item.id),
             ]
 

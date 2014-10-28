@@ -135,8 +135,8 @@ def main():
         with measure("100000 items", disable_gc):
             x = BenchmarkProvider().benchmark(100000)
 
-        with measure("500000 items", disable_gc):
-            x = BenchmarkProvider().benchmark(500000)
+        #with measure("500000 items", disable_gc):
+        #    x = BenchmarkProvider().benchmark(500000)
 
     logger.info("Done!")
 

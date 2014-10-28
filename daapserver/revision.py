@@ -17,7 +17,7 @@ class TreeRevisionStorage(object):
     def __init__(self):
         self.storage = collections.defaultdict(list)
 
-        self.revision = 0
+        self.revision = 1
         self.last_operation = NOOP
 
     def get_index(self, key, revision):
@@ -101,19 +101,50 @@ class TreeRevisionStorage(object):
         else:
             self.storage[key].append((self.revision << 4 | EDIT, set()))
 
-    def info(self, parent_key, child_key, revision):
+    def info(self, parent_key, child_key=None, revision=None):
         """
         Return the revision number and the last operation that is in the
-        history of a given `child_key' of a `parent_key'.
+        history of a given `child_key' of a `parent_key', or just `parent_key'.
         """
 
-        key = (parent_key << 24) + child_key
+        # Build lookup key
+        key = (parent_key << 8) + KEY \
+            if child_key is None else (parent_key << 24) + child_key
 
         # Find item
-        item = self.storage[key][self.get_index(key, revision) - 1]
+        try:
+            if revision is None:
+                item = self.storage[key][-1]
+            else:
+                item = self.storage[key][self.get_index(key, revision) - 1]
+        except IndexError:
+            # Item not found, e.g. no revision history
+            return None
 
         # Return the revision and last operation
         return item[0] >> 4, item[0] & 0x0F
+
+    def load(self, parent_key, iterable):
+        """
+        Load a given iterable of key-value items into the storage, without
+        revisioning. This method assumes that the parent container is empty
+        """
+
+        key = (parent_key << 8) + KEY
+
+        # Make sure parent exists
+        if not self.storage[key]:
+            self.storage[key].append((self.revision << 4 | EDIT, set()))
+
+        # Add each key to the set
+        keys = self.storage[key][-1][1]
+
+        for original_child_key, child_value in iterable:
+            child_key = (parent_key << 24) + original_child_key
+
+            self.storage[child_key].append(
+                (self.revision << 4 | ADD, child_value))
+            keys.add(original_child_key)
 
     def get(self, parent_key, child_key=None, revision=None):
         """

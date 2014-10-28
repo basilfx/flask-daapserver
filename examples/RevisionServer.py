@@ -26,6 +26,7 @@ class RevisionProvider(provider.Provider):
         # throughout the class.
         self.server = server = Server()
         self.lock = gevent.lock.Semaphore()
+        self.ready = gevent.event.Event()
 
         # Add example data to the library. Note that everything should be added
         # in the right order. For instance, you cannot add an item to a database
@@ -38,9 +39,6 @@ class RevisionProvider(provider.Provider):
 
         # Server init ready
         server.storage.commit()
-
-        # Event which synchronizes new revision
-        self.ready = gevent.event.Event()
 
         # Spawn task do random things
         gevent.spawn(self.do_random_things)

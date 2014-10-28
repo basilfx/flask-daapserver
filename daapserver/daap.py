@@ -86,13 +86,13 @@ class DAAPObject(object):
         """
 
         if self.code == code:
-            if self.type == "c":
+            if self.itype == 12:
                 return self
             else:
                 return self.value
 
         # It"s not us. check our children
-        if self.type == "c":
+        if self.itype == 12:
             for obj in self.value:
                 value = obj.get_atom(code)
 
@@ -115,13 +115,13 @@ class DAAPObject(object):
         out.write("\t" * level + "%s (%s)\t%s\t%s\n" %
             (self.get_code_name(), self.code, self.type, self.value))
 
-        if self.type =="c":
+        if self.itype == 12:
             for obj in self.value:
                 obj.print_tree(level + 1)
 
     def encode(self):
         # Generate DMAP tagged data format. Find out what type of object this is
-        if self.type == "c":
+        if self.itype == 12:
             # Object is a container. This means the items within self.value are
             # inspected.
             value = bytearray()
@@ -170,6 +170,7 @@ class DAAPObject(object):
             elif self.itype == 9:
                 if type(value) == unicode:
                     value = value.encode("utf-8")
+
                 packing = "%ss" % len(value)
             else:
                 raise ValueError("Unexpected type %d" % self.type)
@@ -203,11 +204,11 @@ class DAAPObject(object):
         except KeyError:
             raise ValueError("Unknown code '%s'" % self.code)
 
-        if self.type == "c":
+        if self.itype == 12:
             start_pos = stream.tell()
             self.value = []
 
-            # The object is a container, we need to pass it it"s length amount
+            # The object is a container, we need to pass it it's length amount
             # of data for processessing
             eof = 0
             while stream.tell() < start_pos + length:

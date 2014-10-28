@@ -15,10 +15,11 @@ setup(
     license = "MIT",
     keywords = "daap flask daapserver",
     ext_modules = cythonize([
+        "daapserver/utils.py",
         "daapserver/daap.py",
-        "daapserver/structures.py",
-        "daapserver/responses.py",
-        "daapserver/utils.py"
+        #"daapserver/revision.py",
+        "daapserver/models.py",
+        "daapserver/__init__.py"
     ]),
     classifiers = [
         "Development Status :: 5 - Production/Stable",
