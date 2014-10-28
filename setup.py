@@ -17,9 +17,11 @@ setup(
     ext_modules = cythonize([
         "daapserver/utils.py",
         "daapserver/daap.py",
-        #"daapserver/revision.py",
+        "daapserver/daap_data.py",
+        "daapserver/responses.py",
+        "daapserver/revision.py",
         "daapserver/models.py",
-        "daapserver/__init__.py"
+        #"daapserver/__init__.py"
     ]),
     classifiers = [
         "Development Status :: 5 - Production/Stable",
