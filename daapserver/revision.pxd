@@ -1,4 +1,4 @@
-from libc.stdint cimport uint64_t
+from daapserver cimport constants
 
 cimport cython
 
@@ -8,9 +8,4 @@ cdef class TreeRevisionStorage(object):
     cdef object storage
 
     @cython.locals(low=cython.int, middle=cython.int, high=cython.int)
-    cdef get_index(self, uint64_t key, int revision)
-
-    cpdef clear(self, uint64_t parent_key)
-
-    @cython.locals(key=uint64_t)
-    cpdef load(self, uint64_t parent_key, object iterable)
+    cdef get_index(self, object key, int revision)
