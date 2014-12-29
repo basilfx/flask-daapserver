@@ -92,14 +92,14 @@ def containers(provider, new, old, added, removed, is_update):
             DAAPObject("dmap.itemid", container.id),
             DAAPObject("dmap.itemname", container.name),
             DAAPObject("dmap.itemcount", len(container.container_items)),
-            DAAPObject("dmap.parentcontainerid", container.parent.id if container.parent else 0)
+            DAAPObject("dmap.parentcontainerid", container.parent_id if container.parent_id else 0)
         ]
 
         if provider.supports_persistent_id and container.persistent_id is not None:
             data.append(DAAPObject("dmap.persistentid", container.persistent_id))
-        if container.is_base is not None:
+        if container.is_base:
             data.append(DAAPObject("daap.baseplaylist", 1))
-        if container.is_smart is not None:
+        if container.is_smart:
             data.append(DAAPObject("com.apple.itunes.smart-playlist", 1))
 
         return DAAPObject("dmap.listingitem", data)

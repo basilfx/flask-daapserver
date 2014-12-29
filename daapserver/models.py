@@ -164,8 +164,8 @@ class Database(object):
             ("Containers", self.containers))
 
 class Item(object):
-    __slots__ = ("storage", "key", "id", "persistent_id", "name", "track",
-        "artist", "album", "year", "bitrate", "duration", "file_size",
+    __slots__ = ("storage", "key", "id", "persistent_id", "database_id", "name",
+        "track", "artist", "album", "year", "bitrate", "duration", "file_size",
         "file_name", "file_type", "file_suffix", "album_art", "genre")
 
     def __init__(self, storage=None, revision=None, **kwargs):
@@ -174,6 +174,7 @@ class Item(object):
 
         self.id = None
         self.persistent_id = None
+        self.database_id = None
         self.name = None
         self.track = None
         self.artist = None
@@ -192,8 +193,8 @@ class Item(object):
         return utils.to_tree(self)
 
 class Container(object):
-    __slots__ = ("storage", "key", "container_items", "id", "persistent_id",
-        "name", "parent", "is_smart", "is_base")
+    __slots__ = ("storage", "key", "container_items", "id", "database_id",
+        "persistent_id", "parent_id", "name", "is_smart", "is_base")
 
     collection_class = Collection
 
@@ -203,8 +204,9 @@ class Container(object):
 
         self.id = None
         self.persistent_id = None
+        self.database_id = None
+        self.parent_id = None
         self.name = None
-        self.parent = None
         self.is_smart = None
         self.is_base = None
 
@@ -215,7 +217,8 @@ class Container(object):
         return utils.to_tree(self, ("Container Items", self.container_items))
 
 class ContainerItem(object):
-    __slots__ = ("storage", "key", "id", "persistent_id", "item_id", "order")
+    __slots__ = ("storage", "key", "id", "persistent_id", "container_id",
+        "database_id", "item_id", "order")
 
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage
@@ -223,6 +226,8 @@ class ContainerItem(object):
 
         self.id = None
         self.persistent_id = None
+        self.container_id = None
+        self.database_id = None
         self.item_id = None
         self.order = None
 
