@@ -5,29 +5,28 @@ from distutils.core import setup
 # Setup definitions
 setup(
     name="flask_daapserver",
-    version="2.0",
+    version="2.1.0",
     description="DAAP server framework implemented with Flask",
     author="Bas Stottelaar",
     author_email="basstottelaar@gmail.com",
     packages=["daapserver"] ,
     package_dir={"daapserver": "daapserver"} ,
-    install_requires=["flask", "pybonjour"],
+    install_requires=["cython", "flask", "pybonjour"],
     license = "MIT",
     keywords = "daap flask daapserver",
     ext_modules = cythonize([
-        "daapserver/utils.py",
         "daapserver/daap.py",
         "daapserver/daap_data.py",
         "daapserver/responses.py",
         "daapserver/revision.py",
         "daapserver/models.py",
-        #"daapserver/__init__.py"
     ]),
     classifiers = [
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "License :: OSI Approved :: MIT License",
         "Topic :: System :: Networking",
+        "Topic :: Multimedia :: Sound/Audio :: Players",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
     ],

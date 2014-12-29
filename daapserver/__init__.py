@@ -13,6 +13,8 @@ import re
 
 __all__ = ["create_server_app"]
 
+__version__ = "2.1.0"
+
 # Mapping for query string arguments to function arguments. Used by the
 # daap_unpack_args decorator.
 QS_MAPPING = [
