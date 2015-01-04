@@ -1,6 +1,6 @@
-from daapserver import daap, responses
+from daapserver import responses, utils
 
-from flask import Flask, Response, request, send_file
+from flask import Flask, Response, request
 from werkzeug.contrib.cache import SimpleCache
 from werkzeug import http
 
@@ -25,10 +25,11 @@ QS_IGNORE_CACHE = [
     "session-id",
 ]
 
+
 class ObjectResponse(Response):
     """
-    DAAP object response. Encodes a DAAPObject to raw bytes and sets the content
-    type.
+    DAAP object response. Encodes a DAAPObject to raw bytes and sets the
+    content type.
     """
 
     def __init__(self, data, *args, **kwargs):
@@ -38,8 +39,9 @@ class ObjectResponse(Response):
         # Instantiate response
         super(ObjectResponse, self).__init__(data.encode(), *args, **kwargs)
 
+
 def create_server_app(provider, server_name, password=None, cache=True,
-    debug=False):
+                      debug=False):
     """
     Create a DAAP server, based around a Flask application. The server requires
     a content provider, server name and optionally, a password. The content
@@ -80,7 +82,8 @@ def create_server_app(provider, server_name, password=None, cache=True,
         @wraps(func)
         def _inner(environment, start_response):
             if environment["PATH_INFO"].startswith("daap://"):
-                environment["PATH_INFO"] = "/" + environment["PATH_INFO"].split("/", 3)[3]
+                environment["PATH_INFO"] = "/" + \
+                    environment["PATH_INFO"].split("/", 3)[3]
             return func(environment, start_response)
         return _inner
     app.wsgi_app = daap_wsgi_app(app.wsgi_app)
@@ -97,7 +100,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         # Create a function specific mapping, only for arguments appearing in
         # the function declaration.
         args, _, _, _ = inspect.getargspec(func)
-        mappings = [ mapping for mapping in QS_MAPPING if mapping[1] in args ]
+        mappings = [mapping for mapping in QS_MAPPING if mapping[1] in args]
 
         @wraps(func)
         def _inner(*args, **kwargs):
@@ -117,7 +120,8 @@ def create_server_app(provider, server_name, password=None, cache=True,
             auth = request.authorization
 
             if not auth or not auth.password == password:
-                return Response(None, 401, {'WWW-Authenticate': 'Basic realm="%s"' % server_name})
+                return Response(None, 401, {
+                    'WWW-Authenticate': 'Basic realm="%s"' % server_name})
             return func(*args, **kwargs)
         return _inner if password else func
 
@@ -174,6 +178,9 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @app.route("/server-info", methods=["GET"])
     @daap_cache_response
     def server_info():
+        """
+        """
+
         data = responses.server_info(provider, server_name, password)
 
         return ObjectResponse(data)
@@ -181,6 +188,9 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @app.route("/content-codes", methods=["GET"])
     @daap_cache_response
     def content_codes():
+        """
+        """
+
         data = responses.content_codes(provider)
 
         return ObjectResponse(data)
@@ -188,8 +198,10 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @app.route("/login", methods=["GET"])
     @daap_authenticate
     def login():
-        session_id = provider.create_session()
+        """
+        """
 
+        session_id = provider.create_session()
         data = responses.login(provider, session_id)
 
         return ObjectResponse(data)
@@ -198,6 +210,9 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @daap_authenticate
     @daap_unpack_args
     def logout(session_id):
+        """
+        """
+
         provider.destroy_session(session_id)
 
         return Response(None, status=204)
@@ -206,12 +221,18 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @daap_authenticate
     @daap_unpack_args
     def activity(session_id):
+        """
+        """
+
         return Response(None, status=200)
 
     @app.route("/update", methods=["GET"])
     @daap_authenticate
     @daap_unpack_args
     def update(session_id, revision, delta):
+        """
+        """
+
         revision = provider.get_revision(session_id, revision, delta)
 
         data = responses.update(provider, revision)
@@ -233,50 +254,79 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def databases(session_id, revision, delta):
+        """
+        """
+
         new, old = provider.get_databases(session_id, revision, delta)
         added, removed, is_update = utils.diff(new, old)
 
-        data = responses.databases(provider, new, old, added, removed, is_update)
+        data = responses.databases(
+            provider, new, old, added, removed, is_update)
 
         return ObjectResponse(data)
 
-    @app.route("/databases/<int:database_id>/items/<int:item_id>/extra_data/artwork", methods=["GET"])
+    @app.route(
+        "/databases/<int:database_id>/items/<int:item_id>/extra_data/artwork",
+        methods=["GET"])
     @daap_unpack_args
     def database_item_artwork(database_id, item_id, session_id):
-        data, mimetype, total_length = provider.get_artwork(session_id, database_id, item_id)
+        """
+        """
+
+        data, mimetype, total_length = provider.get_artwork(
+            session_id, database_id, item_id)
 
         # Setup response
-        response = Response(data, 200, mimetype=mimetype, direct_passthrough=not isinstance(data, basestring))
+        response = Response(
+            data, 200, mimetype=mimetype,
+            direct_passthrough=not isinstance(data, basestring))
 
         if total_length:
             response.headers["Content-Length"] = total_length
 
         return response
 
-    @app.route("/databases/<int:database_id>/groups/<int:group_id>/extra_data/artwork", methods=["GET"])
+    @app.route(
+        "/databases/<int:database_id>/groups/<int:group_id>/extra_data/"
+        "artwork", methods=["GET"])
     @daap_unpack_args
-    def database_group_artwork(database_id, group_id, session_id, revision, delta):
+    def database_group_artwork(database_id, group_id, session_id, revision,
+                               delta):
+        """
+        """
         raise NotImplemented("Not implemented")
 
-    @app.route("/databases/<int:database_id>/items/<int:item_id>.<suffix>", methods=["GET"])
+    @app.route(
+        "/databases/<int:database_id>/items/<int:item_id>.<suffix>",
+        methods=["GET"])
     @daap_unpack_args
     def database_item(database_id, item_id, suffix, session_id):
+        """
+        """
+
         range_header = request.headers.get("Range", None)
 
         if range_header:
             begin, end = http.parse_range_header(range_header).ranges[0]
-            data, mimetype, total_length = provider.get_item(session_id, database_id, item_id, byte_range=(begin, end))
+            data, mimetype, total_length = provider.get_item(
+                session_id, database_id, item_id, byte_range=(begin, end))
             begin, end = (begin or 0), (end or total_length)
 
             # Setup response
-            response = Response(data, 206, mimetype=mimetype, direct_passthrough=not isinstance(data, basestring))
-            response.headers["Content-Range"] = "bytes %d-%d/%d" % (begin, end - 1, total_length)
+            response = Response(
+                data, 206, mimetype=mimetype,
+                direct_passthrough=not isinstance(data, basestring))
+            response.headers["Content-Range"] = "bytes %d-%d/%d" % (
+                begin, end - 1, total_length)
             response.headers["Content-Length"] = end - begin
         else:
-            data, mimetype, total_length = provider.get_item(session_id, database_id, item_id)
+            data, mimetype, total_length = provider.get_item(
+                session_id, database_id, item_id)
 
             # Setup response
-            response = Response(data, 200, mimetype=mimetype, direct_passthrough=not isinstance(data, basestring))
+            response = Response(
+                data, 200, mimetype=mimetype,
+                direct_passthrough=not isinstance(data, basestring))
             response.headers["Content-Length"] = total_length
 
         return response
@@ -286,6 +336,9 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def database_items(database_id, session_id, revision, delta, type):
+        """
+        """
+
         new, old = provider.get_items(session_id, database_id, revision, delta)
         added, removed, is_update = utils.diff(new, old)
 
@@ -298,10 +351,15 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def database_containers(database_id, session_id, revision, delta):
-        new, old = provider.get_containers(session_id, database_id, revision, delta)
+        """
+        """
+
+        new, old = provider.get_containers(
+            session_id, database_id, revision, delta)
         added, removed, is_update = utils.diff(new, old)
 
-        data = responses.containers(provider, new, old, added, removed, is_update)
+        data = responses.containers(
+            provider, new, old, added, removed, is_update)
 
         return ObjectResponse(data)
 
@@ -310,17 +368,27 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def database_groups(database_id, session_id, revision, delta, type):
+        """
+        """
         raise NotImplemented
 
-    @app.route("/databases/<int:database_id>/containers/<int:container_id>/items", methods=["GET"])
+    @app.route(
+        "/databases/<int:database_id>/containers/<int:container_id>/items",
+        methods=["GET"])
     @daap_authenticate
     @daap_cache_response
     @daap_unpack_args
-    def database_container_item(database_id, container_id, session_id, revision, delta, type):
-        new, old = provider.get_container_items(session_id, database_id, container_id, revision, delta)
+    def database_container_item(database_id, container_id, session_id,
+                                revision, delta, type):
+        """
+        """
+
+        new, old = provider.get_container_items(
+            session_id, database_id, container_id, revision, delta)
         added, removed, is_update = utils.diff(new, old)
 
-        data = responses.container_items(provider, new, old, added, removed, is_update)
+        data = responses.container_items(
+            provider, new, old, added, removed, is_update)
 
         return ObjectResponse(data)
 

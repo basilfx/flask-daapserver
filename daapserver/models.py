@@ -1,11 +1,10 @@
 from daapserver import revision, utils
 
-import collections
-
 KEY_DATABASES = 0x01
 KEY_ITEMS = 0x02
 KEY_CONTAINERS = 0x03
 KEY_CONTAINER_ITEMS = 0x04
+
 
 class Collection(object):
     __slots__ = ("parent", "key", "revision")
@@ -30,13 +29,13 @@ class Collection(object):
         """
         """
 
-        return self.parent.storage.get((self.parent.key << 8) + self.key,
-            key, revision=self.revision)
+        return self.parent.storage.get(
+            (self.parent.key << 8) + self.key, key, revision=self.revision)
 
     def __len__(self):
         try:
-            return len(self.parent.storage.get((self.parent.key << 8) + \
-                self.key, revision=self.revision))
+            return len(self.parent.storage.get(
+                (self.parent.key << 8) + self.key, revision=self.revision))
         except KeyError:
             return 0
 
@@ -44,11 +43,11 @@ class Collection(object):
         return self.iterkeys()
 
     def __repr__(self):
-        items = self.parent.storage.get((self.parent.key << 8) + self.key,
-            revision=self.revision)
+        items = self.parent.storage.get(
+            (self.parent.key << 8) + self.key, revision=self.revision)
 
-        return "%s(%s, revision=%s)" % (self.__class__.__name__, items,
-            self.revision)
+        return "%s(%s, revision=%s)" % (
+            self.__class__.__name__, items, self.revision)
 
     def add(self, item):
         if self.revision is not None:
@@ -61,8 +60,8 @@ class Collection(object):
         item.storage = self.parent.storage
         item.key = (self.parent.key << 32) + (self.key << 24) + item.id
 
-        self.parent.storage.set((self.parent.key << 8) + self.key, item.id,
-            item)
+        self.parent.storage.set(
+            (self.parent.key << 8) + self.key, item.id, item)
 
     def remove(self, item):
         if self.revision is not None:
@@ -78,12 +77,12 @@ class Collection(object):
         self.parent.storage.delete((self.parent.key << 8) + self.key, item.id)
 
     def keys(self):
-        return [ key for key in self.iterkeys() ]
+        return [key for key in self.iterkeys()]
 
     def iterkeys(self):
         try:
-            keys = self.parent.storage.get((self.parent.key << 8) + self.key,
-                revision=self.revision)
+            keys = self.parent.storage.get(
+                (self.parent.key << 8) + self.key, revision=self.revision)
         except KeyError:
             keys = []
 
@@ -92,12 +91,12 @@ class Collection(object):
             yield key
 
     def values(self):
-        return [ item for item in self.itervalues() ]
+        return [item for item in self.itervalues()]
 
     def itervalues(self):
         try:
-            keys = self.parent.storage.get((self.parent.key << 8) + self.key,
-                revision=self.revision)
+            keys = self.parent.storage.get(
+                (self.parent.key << 8) + self.key, revision=self.revision)
         except KeyError:
             keys = []
 
@@ -111,8 +110,10 @@ class Collection(object):
         keys = self.parent.storage.get(key, revision=self.revision)
         keys_other = self.parent.storage.get(key, revision=other.revision)
 
-        return { k for k in keys & keys_other if self.parent.storage.info(
-            key, k, revision=self.revision)[1] == revision.EDIT }
+        return {
+            k for k in keys & keys_other if self.parent.storage.info(
+                key, k, revision=self.revision)[1] == revision.EDIT
+        }
 
     def added(self, other):
         key = (self.parent.key << 8) + self.key
@@ -124,6 +125,7 @@ class Collection(object):
 
     def removed(self, other):
         return other.added(self)
+
 
 class Server(object):
     __slots__ = ("storage", "key", "id", "databases")
@@ -141,9 +143,10 @@ class Server(object):
     def to_tree(self):
         return utils.to_tree(self, ("Databases", self.databases))
 
+
 class Database(object):
-    __slots__ = ("storage", "key", "items", "containers", "id", "persistent_id",
-        "name")
+    __slots__ = (
+        "storage", "key", "items", "containers", "id", "persistent_id", "name")
 
     collection_class = Collection
 
@@ -156,15 +159,17 @@ class Database(object):
         self.name = None
 
         self.items = self.collection_class(self, KEY_ITEMS, revision=revision)
-        self.containers = self.collection_class(self, KEY_CONTAINERS,
-            revision=revision)
+        self.containers = self.collection_class(
+            self, KEY_CONTAINERS, revision=revision)
 
     def to_tree(self, indent=0):
-        return utils.to_tree(self, ("Items", self.items),
-            ("Containers", self.containers))
+        return utils.to_tree(
+            self, ("Items", self.items), ("Containers", self.containers))
+
 
 class Item(object):
-    __slots__ = ("storage", "key", "id", "persistent_id", "database_id", "name",
+    __slots__ = (
+        "storage", "key", "id", "persistent_id", "database_id", "name",
         "track", "artist", "album", "year", "bitrate", "duration", "file_size",
         "file_name", "file_type", "file_suffix", "album_art", "genre")
 
@@ -192,8 +197,10 @@ class Item(object):
     def to_tree(self):
         return utils.to_tree(self)
 
+
 class Container(object):
-    __slots__ = ("storage", "key", "container_items", "id", "database_id",
+    __slots__ = (
+        "storage", "key", "container_items", "id", "database_id",
         "persistent_id", "parent_id", "name", "is_smart", "is_base")
 
     collection_class = Collection
@@ -210,15 +217,17 @@ class Container(object):
         self.is_smart = None
         self.is_base = None
 
-        self.container_items = self.collection_class(self, KEY_CONTAINER_ITEMS,
-            revision=revision)
+        self.container_items = self.collection_class(
+            self, KEY_CONTAINER_ITEMS, revision=revision)
 
     def to_tree(self):
         return utils.to_tree(self, ("Container Items", self.container_items))
 
+
 class ContainerItem(object):
-    __slots__ = ("storage", "key", "id", "persistent_id", "container_id",
-        "database_id", "item_id", "order")
+    __slots__ = (
+        "storage", "key", "id", "persistent_id", "container_id", "database_id",
+        "item_id", "order")
 
     def __init__(self, storage=None, revision=None, **kwargs):
         self.storage = storage

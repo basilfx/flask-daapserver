@@ -1,7 +1,7 @@
-__all__ = ["dmapDataTypes", "dmapNames", "dmapReverseDataTypes", "dmapCodeTypes"]
+__all__ = [
+    "dmapDataTypes", "dmapNames", "dmapReverseDataTypes", "dmapCodeTypes"]
 
 dmapCodeTypes = {
-    #"f\x8dch": ("dmap.haschildcontainers", "b", 1),
     "abal": ("daap.browsealbumlisting", "c", 12),
     "abar": ("daap.browseartistlisting", "c", 12),
     "abcp": ("daap.browsecomposerlisting", "c", 12),
@@ -143,19 +143,24 @@ dmapCodeTypes = {
 }
 
 dmapDataTypes = {
-    1: "b",  # byte
-    2: "ub", # unsigned byte
-    3: "h",  # short
-    4: "uh", # unsigned short
-    5: "i",  # integer
-    6: "ui", # unsigned integer
-    7: "l",  # long
-    8: "ul", # unsigned long
-    9: "s",  # string
-    10: "t", # timestamp
-    11: "v", # version
-    12: "c", # container
+    1: "b",   # byte
+    2: "ub",  # unsigned byte
+    3: "h",   # short
+    4: "uh",  # unsigned short
+    5: "i",   # integer
+    6: "ui",  # unsigned integer
+    7: "l",   # long
+    8: "ul",  # unsigned long
+    9: "s",   # string
+    10: "t",  # timestamp
+    11: "v",  # version
+    12: "c",  # container
 }
 
-dmapNames = { dmapCodeTypes[k][0]: k for k in dmapCodeTypes }
-dmapReverseDataTypes = { dmapDataTypes[k]: k for k in dmapDataTypes }
+dmapNames = {
+    dmapCodeTypes[k][0]: k for k in dmapCodeTypes
+}
+
+dmapReverseDataTypes = {
+    dmapDataTypes[k]: k for k in dmapDataTypes
+}

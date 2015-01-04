@@ -2,11 +2,12 @@ import sys
 import uuid
 import ctypes
 
+
 def diff(new, old):
     """
     Compute the difference in items of two revisioned collections. If only
-    `new' is specified, it is assumed it's not an update. If both are set, first
-    the removed items are returned. Otherwise, the added and edited ones.
+    `new' is specified, it is assumed it's not an update. If both are set,
+    first the removed items are returned. Otherwise, the added and edited ones.
     """
 
     added = set()
@@ -25,6 +26,7 @@ def diff(new, old):
 
     return added, removed, is_update
 
+
 def generate_persistent_id():
     """
     Generate a persistent ID. This ID is used in the DAAP protocol to uniquely
@@ -32,6 +34,7 @@ def generate_persistent_id():
     """
 
     return ctypes.c_long(uuid.uuid1().int >> 64).value
+
 
 def parse_byte_range(byte_range, min_byte=0, max_byte=sys.maxint):
     """
@@ -58,6 +61,7 @@ def parse_byte_range(byte_range, min_byte=0, max_byte=sys.maxint):
         raise ValueError("End larger than max")
 
     return begin, end
+
 
 def to_tree(instance, *children):
     """

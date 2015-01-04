@@ -1,20 +1,32 @@
 from daapserver.daap import DAAPObject
 from daapserver import daap
 
+
 def login(provider, session_id):
-    return DAAPObject("dmap.loginresponse",[
+    """
+    """
+
+    return DAAPObject("dmap.loginresponse", [
         DAAPObject("dmap.status", 200),
         DAAPObject("dmap.sessionid", session_id)
     ])
 
+
 def update(provider, revision):
+    """
+    """
+
     return DAAPObject("dmap.updateresponse", [
         DAAPObject("dmap.status", 200),
         DAAPObject("dmap.serverrevision", revision),
     ])
 
+
 def content_codes(provider):
-    children = [ DAAPObject("dmap.status", 200) ]
+    """
+    """
+
+    children = [DAAPObject("dmap.status", 200)]
     data = DAAPObject("dmap.contentcodesresponse", children)
 
     for code in daap.dmapCodeTypes.iterkeys():
@@ -24,12 +36,18 @@ def content_codes(provider):
             DAAPObject("dmap.dictionary", [
                 DAAPObject("dmap.contentcodesnumber", code),
                 DAAPObject("dmap.contentcodesname", name),
-                DAAPObject("dmap.contentcodestype",
-                    daap.dmapReverseDataTypes[itype])
+                DAAPObject(
+                    "dmap.contentcodestype", daap.dmapReverseDataTypes[itype])
             ])
         )
 
+    return data
+
+
 def server_info(provider, server_name, password):
+    """
+    """
+
     data = [
         DAAPObject("dmap.status", 200),
         DAAPObject("dmap.protocolversion", "2.0.0"),
@@ -56,7 +74,11 @@ def server_info(provider, server_name, password):
 
     return DAAPObject("dmap.serverinforesponse", data)
 
+
 def databases(provider, new, old, added, removed, is_update):
+    """
+    """
+
     # Single database response
     def _database(database):
         data = [
@@ -66,8 +88,10 @@ def databases(provider, new, old, added, removed, is_update):
             DAAPObject("dmap.containercount", len(database.containers))
         ]
 
-        if provider.supports_persistent_id and database.persistent_id is not None:
-            data.append(DAAPObject("dmap.persistentid", database.persistent_id))
+        if provider.supports_persistent_id and \
+                database.persistent_id is not None:
+            data.append(DAAPObject(
+                "dmap.persistentid", database.persistent_id))
 
         return DAAPObject("dmap.listingitem", data)
 
@@ -85,18 +109,26 @@ def databases(provider, new, old, added, removed, is_update):
         ))
     ])
 
+
 def containers(provider, new, old, added, removed, is_update):
+    """
+    """
+
     # Single container response
     def _container(container):
         data = [
             DAAPObject("dmap.itemid", container.id),
             DAAPObject("dmap.itemname", container.name),
             DAAPObject("dmap.itemcount", len(container.container_items)),
-            DAAPObject("dmap.parentcontainerid", container.parent_id if container.parent_id else 0)
+            DAAPObject(
+                "dmap.parentcontainerid",
+                container.parent_id if container.parent_id else 0)
         ]
 
-        if provider.supports_persistent_id and container.persistent_id is not None:
-            data.append(DAAPObject("dmap.persistentid", container.persistent_id))
+        if provider.supports_persistent_id and \
+                container.persistent_id is not None:
+            data.append(DAAPObject(
+                "dmap.persistentid", container.persistent_id))
         if container.is_base:
             data.append(DAAPObject("daap.baseplaylist", 1))
         if container.is_smart:
@@ -118,7 +150,11 @@ def containers(provider, new, old, added, removed, is_update):
         ))
     ])
 
+
 def container_items(provider, new, old, added, removed, is_update):
+    """
+    """
+
     # Single container response
     def _container_item(container_item):
         data = [
@@ -127,8 +163,10 @@ def container_items(provider, new, old, added, removed, is_update):
             DAAPObject("dmap.containeritemid", container_item.id),
         ]
 
-        if provider.supports_persistent_id and container_item.persistent_id is not None:
-            data.append(DAAPObject("dmap.persistentid", container_item.persistent_id))
+        if provider.supports_persistent_id and \
+                container_item.persistent_id is not None:
+            data.append(DAAPObject(
+                "dmap.persistentid", container_item.persistent_id))
 
         return DAAPObject("dmap.listingitem", data)
 
@@ -146,7 +184,11 @@ def container_items(provider, new, old, added, removed, is_update):
         ))
     ])
 
+
 def items(provider, new, old, added, removed, is_update):
+    """
+    """
+
     # Single item response
     def _item(item):
         data = [

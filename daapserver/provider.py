@@ -4,6 +4,7 @@ import cStringIO
 
 __all__ = ("LocalFileProvider", "Provider", "Session")
 
+
 class DummyLock(object):
     def __enter__(self):
         pass
@@ -79,8 +80,11 @@ class Provider(object):
         return next_revision
 
     def check_sessions(self):
+        """
+        """
+
         lowest_revision = min(
-             session.revision for session in self.sessions.itervalues())
+            session.revision for session in self.sessions.itervalues())
 
         # Remove all old revision history
         if lowest_revision == self.server.storage.revision:
@@ -97,8 +101,6 @@ class Provider(object):
         """
         """
 
-        session = self.sessions[session_id]
-
         if delta == 0:
             new = self.server.databases
             old = None
@@ -112,43 +114,60 @@ class Provider(object):
         """
         """
 
-        session = self.sessions[session_id]
-
         if delta == 0:
-            new = self.server.databases[database_id].containers
+            new = self.server \
+                      .databases[database_id] \
+                      .containers
             old = None
         else:
-            new = self.server.databases(revision)[database_id].containers(revision)
-            old = self.server.databases(delta)[database_id].containers(delta)
+            new = self.server \
+                      .databases(revision)[database_id] \
+                      .containers(revision)
+            old = self.server \
+                      .databases(delta)[database_id] \
+                      .containers(delta)
 
         return new, old
 
-    def get_container_items(self, session_id, database_id, container_id, revision, delta):
+    def get_container_items(self, session_id, database_id, container_id,
+                            revision, delta):
         """
         """
-
-        session = self.sessions[session_id]
 
         if delta == 0:
-            new = self.server.databases[database_id].containers[container_id].container_items
+            new = self.server \
+                      .databases[database_id] \
+                      .containers[container_id] \
+                      .container_items
             old = None
         else:
-            new = self.server.databases(revision)[database_id].containers(revision)[container_id].container_items(revision)
-            old = self.server.databases(delta)[database_id].containers(delta)[container_id].container_items(delta)
+            new = self.server \
+                      .databases(revision)[database_id] \
+                      .containers(revision)[container_id] \
+                      .container_items(revision)
+            old = self.server \
+                      .databases(delta)[database_id] \
+                      .containers(delta)[container_id] \
+                      .container_items(delta)
 
         return new, old
 
     def get_items(self, session_id, database_id, revision, delta):
         """
         """
-        session = self.sessions[session_id]
 
         if delta == 0:
-            new = self.server.databases[database_id].items
+            new = self.server \
+                      .databases[database_id] \
+                      .items
             old = None
         else:
-            new = self.server.databases(revision)[database_id].items(revision)
-            old = self.server.databases(delta)[database_id].items(delta)
+            new = self.server \
+                      .databases(revision)[database_id] \
+                      .items(revision)
+            old = self.server \
+                      .databases(delta)[database_id] \
+                      .items(delta)
 
         return new, old
 
@@ -210,7 +229,7 @@ class LocalFileProvider(Provider):
         if not begin:
             return fp, item.mimetype, item.file_size
         elif begin and not end:
-            fp.seek(start)
+            fp.seek(begin)
             return fp, item.mimetype, item.file_size
         elif begin and end:
             fp.seek(begin)

@@ -11,11 +11,13 @@
 #
 # Stripped more clean + more bug fixes, Bas Stottelaar
 
-from daapserver.daap_data import *
+from daapserver.daap_data import dmapDataTypes, dmapNames, \
+    dmapReverseDataTypes, dmapCodeTypes
 
 import struct
 
 __all__ = ["DAAPObject"]
+
 
 class DAAPObject(object):
     __slots__ = ("code", "value", "itype")
@@ -54,10 +56,11 @@ class DAAPObject(object):
 
             # Pack data: 4 byte code, 4 byte length, length bytes of value
             try:
-                return struct.pack("!4sI%ds" % length, self.code, length,
-                    str(value))
+                return struct.pack(
+                    "!4sI%ds" % length, self.code, length, str(value))
             except struct.error as e:
-                raise ValueError("Error while packing code '%s' ('%s'): %s" %
+                raise ValueError(
+                    "Error while packing code '%s' ('%s'): %s" %
                     (self.code, dmapCodeTypes[self.code][0], e))
         else:
             # Determine the packing
@@ -94,8 +97,8 @@ class DAAPObject(object):
 
                 packing = "%ss" % len(value)
             else:
-                raise ValueError("Unexpected type %d" %
-                    dmapReverseDataTypes[self.itype])
+                raise ValueError(
+                    "Unexpected type %d" % dmapReverseDataTypes[self.itype])
 
             # Calculate the length of what we"re packing
             length = struct.calcsize("!%s" % packing)
@@ -103,11 +106,12 @@ class DAAPObject(object):
             # Pack data: 4 characters for the code, 4 bytes for the length
             # and length bytes for the value
             try:
-                return struct.pack("!4sI%s" % packing, self.code, length,
-                    value)
+                return struct.pack(
+                    "!4sI%s" % packing, self.code, length, value)
             except struct.error as e:
-                raise ValueError("Error while packing code '%s' ('%s'): %s" %
-                    (self.code, dmapCodeTypes[self.code][0], e))
+                raise ValueError(
+                    "Error while packing code '%s' ('%s'): %s" % (
+                        self.code, dmapCodeTypes[self.code][0], e))
 
     def decode(self, stream):
         # Read 4 bytes for the code and 4 bytes for the length of the
@@ -162,13 +166,13 @@ class DAAPObject(object):
             elif self.itype == 9:
                 # The object is a string. The strings length is important.
                 try:
-                    value = unicode(struct.unpack("!%ss" % length, code)[0],
-                        "utf-8")
+                    value = unicode(struct.unpack(
+                        "!%ss" % length, code)[0], "utf-8")
                 except UnicodeDecodeError:
-                    value = unicode(struct.unpack("!%ss" % length, code)[0],
-                        "latin-1")
+                    value = unicode(struct.unpack(
+                        "!%ss" % length, code)[0], "latin-1")
             else:
-                raise ValueError("Unexpected type '%s'" %
-                    dmapDataTypes[self.itype])
+                raise ValueError(
+                    "Unexpected type '%s'" % dmapDataTypes[self.itype])
 
             self.value = value

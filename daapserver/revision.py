@@ -1,7 +1,7 @@
 from daapserver import constants
 
 import collections
-import unittest
+
 
 class TreeRevisionStorage(object):
     """
@@ -17,8 +17,8 @@ class TreeRevisionStorage(object):
 
     def get_index(self, key, revision):
         """
-        Search for the index of an item where the revision is equal or less than
-        given. For instance, having revisions [1, 5, 6], searching for 1-4
+        Search for the index of an item where the revision is equal or less
+        than given. For instance, having revisions [1, 5, 6], searching for 1-4
         yields 0, 5 yields 2 and 6 yields 2.
         """
 
@@ -38,8 +38,8 @@ class TreeRevisionStorage(object):
 
     def commit(self):
         """
-        Make sure next operation causes a revision increment. This is useful for
-        set operations, since two sequential edits don't increment.
+        Make sure next operation causes a revision increment. This is useful
+        for set operations, since two sequential edits don't increment.
         """
         self.last_operation = constants.NOOP
 
@@ -92,9 +92,11 @@ class TreeRevisionStorage(object):
                 (self.revision << 4 | constants.DELETE, None))
 
         if (self.storage[key][-1][0] >> 4) == self.revision:
-            self.storage[key][-1] = (self.revision << 4 | constants.EDIT, set())
+            self.storage[key][-1] = (
+                self.revision << 4 | constants.EDIT, set())
         else:
-            self.storage[key].append((self.revision << 4 | constants.EDIT, set()))
+            self.storage[key].append(
+                (self.revision << 4 | constants.EDIT, set()))
 
     def info(self, parent_key, child_key=None, revision=None):
         """
@@ -129,7 +131,8 @@ class TreeRevisionStorage(object):
 
         # Make sure parent exists
         if not self.storage[key]:
-            self.storage[key].append((self.revision << 4 | constants.EDIT, set()))
+            self.storage[key].append(
+                (self.revision << 4 | constants.EDIT, set()))
 
         # Add each key to the set
         keys = self.storage[key][-1][1]
@@ -161,12 +164,13 @@ class TreeRevisionStorage(object):
             item = self.storage[key][-1]
         else:
             if revision > self.revision:
-                raise KeyError("Requested revision %d greater than current " \
-                    "revision %d" % (revision, self.revision))
+                raise KeyError(
+                    "Requested revision %d greater than current revision %d" %
+                    (revision, self.revision))
             elif (self.storage[key][0][0] >> 4) > revision:
-                raise KeyError("Requested revision %d lower than first " \
-                    "element revision %d" % (revision,
-                        self.storage[key][0][0] >> 4))
+                raise KeyError(
+                    "Requested revision %d lower than first element "
+                    "revision %d" % (revision, self.storage[key][0][0] >> 4))
 
             # Find item with binary search
             item = self.storage[key][self.get_index(key, revision) - 1]
@@ -202,9 +206,11 @@ class TreeRevisionStorage(object):
                     (self.revision << 4 | constants.DELETE, None))
 
             if (self.storage[key][-1][0] >> 4) == self.revision:
-                self.storage[key][-1] = (self.revision << 4 | constants.DELETE, None)
+                self.storage[key][-1] = (
+                    self.revision << 4 | constants.DELETE, None)
             else:
-                self.storage[key].append((self.revision << 4 | constants.DELETE, None))
+                self.storage[key].append(
+                    (self.revision << 4 | constants.DELETE, None))
         else:
             original_child_key = child_key
             child_key = (parent_key << 24) + child_key
@@ -221,12 +227,14 @@ class TreeRevisionStorage(object):
 
             # Copy references
             if (self.storage[key][-1][0] >> 4) != self.revision:
-                self.storage[key].append((self.revision << 4 | constants.EDIT,
-                    self.storage[key][-1][1].copy()))
+                self.storage[key].append(
+                    (self.revision << 4 | constants.EDIT,
+                        self.storage[key][-1][1].copy()))
 
             # Delete child and update references
             self.storage[key][-1][1].remove(original_child_key)
-            self.storage[child_key].append((self.revision << 4 | constants.DELETE, None))
+            self.storage[child_key].append(
+                (self.revision << 4 | constants.DELETE, None))
 
     def set(self, parent_key, child_key, child_value):
         """
@@ -239,9 +247,8 @@ class TreeRevisionStorage(object):
         child_key = (parent_key << 24) + child_key
 
         # Check for existing item
-        if (not self.storage[child_key] or
-            self.storage[child_key][-1][0] & constants.DELETE):
-
+        if not self.storage[child_key] or \
+                self.storage[child_key][-1][0] & constants.DELETE:
             operation = constants.ADD
         else:
             operation = constants.EDIT
@@ -259,10 +266,12 @@ class TreeRevisionStorage(object):
             last_revision = (self.storage[key][-1][0] >> 4)
 
             if new_revision or self.revision != last_revision:
-                self.storage[key].append((self.revision << 4 | constants.EDIT,
-                    self.storage[key][-1][1].copy()))
+                self.storage[key].append(
+                    (self.revision << 4 | constants.EDIT,
+                        self.storage[key][-1][1].copy()))
         else:
-            self.storage[key].append((self.revision << 4 | constants.EDIT, set()))
+            self.storage[key].append(
+                (self.revision << 4 | constants.EDIT, set()))
 
         # Set item and update references
         if operation == constants.ADD:
