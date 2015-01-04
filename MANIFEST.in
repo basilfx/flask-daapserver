@@ -1,0 +1,9 @@
+include README.rst
+include README.md
+include LICENSE
+recursive-exclude daapserver *.c
+recursive-exclude daapserver *.so
+recursive-include daapserver *.pxd
+recursive-include tests *.py
+recursive-include examples *.py
+recursive-include docs *

@@ -9,20 +9,25 @@ except ImportError:
     cythonize = lambda x: None
     sys.stderr.write(
         "Warning: Cython not installed. Slower Python-only alternatives will "
-        "be used instead\n")
+        "be used instead.\n")
 
 # Setup definitions
 setup(
     name="flask_daapserver",
     version="2.2.0",
     description="DAAP server framework implemented with Flask",
+    long_description=open("README.rst").read(),
     author="Bas Stottelaar",
     author_email="basstottelaar@gmail.com",
     packages=["daapserver"],
     package_dir={"daapserver": "daapserver"},
+    setup_requires=["nose"],
     install_requires=["flask", "zeroconf", "gevent"],
+    platforms=["any"],
     license="MIT",
+    url="https://github.com/basilfx/flask-daapserver",
     keywords="daap flask daapserver itunes home sharing",
+    zip_safe=False,
     ext_modules=cythonize([
         "daapserver/daap.py",
         "daapserver/daap_data.py",
