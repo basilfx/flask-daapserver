@@ -169,7 +169,7 @@ class TreeRevisionStorage(object):
                     (revision, self.revision))
             elif (self.storage[key][0][0] >> 4) > revision:
                 raise KeyError(
-                    "Requested revision %d lower than first element "
+                    "Requested revision %d is lower than first element "
                     "revision %d" % (revision, self.storage[key][0][0] >> 4))
 
             # Find item with binary search

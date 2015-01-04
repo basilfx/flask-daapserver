@@ -1,10 +1,18 @@
-from daapserver.models import Server, Database, Container, Item, ContainerItem
+from daapserver.models import Server, Database, Item
 
 import unittest
 
+
 class ModelsTest(unittest.TestCase):
+    """
+    Test models.
+    """
 
     def test_basis(self):
+        """
+        Test basic functionality.
+        """
+
         server = Server()
 
         database = Database()
@@ -24,7 +32,7 @@ class ModelsTest(unittest.TestCase):
         server.databases.remove(database)
 
         self.assertEqual(server.databases.keys(), [1])
-        self.assertEqual(server.databases(revision=1).keys(), [1, 2])
+        self.assertEqual(server.databases(revision=2).keys(), [1, 2])
 
         with self.assertRaises(KeyError):
             server.databases[2]
@@ -35,9 +43,13 @@ class ModelsTest(unittest.TestCase):
         server.databases.add(database)
 
         self.assertEqual(server.databases.keys(), [1, 3])
-        self.assertEqual(server.databases(revision=3).keys(), [1, 3])
+        self.assertEqual(server.databases(revision=4).keys(), [1, 3])
 
     def test_nested(self):
+        """
+        Test nesting of objects
+        """
+
         server = Server()
 
         database = Database()
@@ -102,6 +114,10 @@ class ModelsTest(unittest.TestCase):
             database.items.add(item)
 
     def test_diff(self):
+        """
+        Test diff of two sets.
+        """
+
         server = Server()
 
         database = Database()
@@ -119,10 +135,9 @@ class ModelsTest(unittest.TestCase):
         item.name = "Item A, version 2"
         database.items.add(item)
 
-        self.assertEqual(server.storage.revision, 2)
+        self.assertEqual(server.storage.revision, 3)
 
-        items_1 = database.items(revision=1)
-        items_2 = database.items(revision=2)
+        items_1 = database.items(revision=2)
+        items_2 = database.items(revision=3)
 
         self.assertEqual(items_2.edited(items_1), set([2]))
-
