@@ -4,6 +4,8 @@ Flask-DAAPServer
 DAAP server for streaming media, built around the Flask micro framework.
 Supports iTunes, artwork and revisioning.
 
+|Build Status|
+
 Introduction.
 -------------
 
@@ -80,3 +82,6 @@ See the ``LICENSE`` file (MIT license).
 
 Part of this work (DAAP rendering) is based on the original work of
 Davyd Madeley.
+
+.. |Build Status| image:: https://travis-ci.org/basilfx/flask-daapserver.svg?branch=master
+   :target: https://travis-ci.org/basilfx/flask-daapserver
