@@ -1,16 +1,21 @@
-from gevent.pywsgi import WSGIServer
-
 from daapserver.models import Server, Database, Item, Container, ContainerItem
+from daapserver import provider
 
 import gc
 import sys
 import time
-import gevent
 import logging
 import contextlib
 
+try:
+    import psutil
+except ImportError:
+    psutil = None
+    sys.stderr.write("Memory usage info disabled. Install psutils first.\n")
+
 # Logger instance
 logger = logging.getLogger(__name__)
+
 
 class BenchmarkProvider(provider.Provider):
     """
@@ -24,17 +29,19 @@ class BenchmarkProvider(provider.Provider):
 
         # It's important that `self.server' is initialized, since it is used
         # throughout the class.
-        self.server = server = Server()
+        self.server = server = Server(id=1)
 
         # Add example data to the library. Note that everything should be added
-        # in the right order. For instance, you cannot add an item to a database
-        # that hasn't been added to a server.
+        # in the right order. For instance, you cannot add an item to a
+        # database that hasn't been added to a server.
         database = Database(id=1, name="Library")
         server.databases.add(database)
 
         container_one = Container(id=1, name="My Music", is_base=True)
-        container_two = Container(id=2, name="Even", parent=container_one)
-        container_three = Container(id=3, name="Uneven", parent=container_one)
+        container_two = Container(
+            id=2, name="Even", parent_id=container_one.id)
+        container_three = Container(
+            id=3, name="Uneven", parent_id=container_one.id)
         database.containers.add(container_one)
         database.containers.add(container_two)
         database.containers.add(container_three)
@@ -53,10 +60,12 @@ class BenchmarkProvider(provider.Provider):
 
         # Execute `count' operations of addition
         for i in xrange(count):
-            item = Item(id=i, artist="SubDaap", album="RevisionServer", name="Item %d" % i, duration=i, bitrate=320, year=2014)
+            item = Item(
+                id=i, artist="SubDaap", album="RevisionServer",
+                name="Item %d" % i, duration=i, bitrate=320, year=2014)
 
-            container_item_a = ContainerItem(id=i, item=item)
-            container_item_b = ContainerItem(id=i, item=item)
+            container_item_a = ContainerItem(id=i, item_id=item.id)
+            container_item_b = ContainerItem(id=i, item_id=item.id)
 
             database.items.add(item)
             container_one.container_items.add(container_item_a)
@@ -85,6 +94,7 @@ class BenchmarkProvider(provider.Provider):
 
         return len(x) + len(a) + len(b) + len(c)
 
+
 @contextlib.contextmanager
 def measure(test, disable_gc):
     # Disable garbage collector
@@ -100,11 +110,19 @@ def measure(test, disable_gc):
     # Take end time
     end = time.time()
 
+    # Measure memory
+    if psutil:
+        memory = psutil.Process().get_memory_info()[0] / 1024 / 1024
+    else:
+        memory = 0.0
+
     # Report
-    logger.info("Test '%s' took %04f seconds", test, end - start)
+    logger.info(
+        "Test '%s' took %.04f seconds, memory usage is %.02f MB.",
+        test, end - start, memory)
 
     # Wait for enter
-    raw_input("Press enter to continue")
+    raw_input("Press enter to continue.")
 
     # Re-enable garbage collector
     if disable_gc:
@@ -113,8 +131,11 @@ def measure(test, disable_gc):
     # Invoke a collect
     gc.collect()
 
+
 def main():
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
     for disable_gc in [True]:
         with measure("100 items", disable_gc):

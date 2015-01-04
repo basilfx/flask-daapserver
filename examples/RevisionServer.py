@@ -1,5 +1,5 @@
 from daapserver.models import Server, Database, Item, Container, ContainerItem
-from daapserver import DaapServer
+from daapserver import DaapServer, provider
 
 import sys
 import logging
@@ -10,6 +10,7 @@ import random
 
 # Logger instance
 logger = logging.getLogger(__name__)
+
 
 class RevisionProvider(provider.Provider):
     """
@@ -27,8 +28,8 @@ class RevisionProvider(provider.Provider):
         self.ready = gevent.event.Event()
 
         # Add example data to the library. Note that everything should be added
-        # in the right order. For instance, you cannot add an item to a database
-        # that hasn't been added to a server.
+        # in the right order. For instance, you cannot add an item to a
+        # database that hasn't been added to a server.
         database = Database(id=1, name="Library")
         server.databases.add(database)
 
@@ -49,25 +50,33 @@ class RevisionProvider(provider.Provider):
             with self.lock:
                 # Decide what to do
                 if random.choice(["add", "add", "del"]) == "add":
-                    item = Item(id=counter, artist="SubDaap", album="RevisionServer", name="Item %d" % counter, duration=counter)
-                    container_item = ContainerItem(id=counter, item=item)
+                    item = Item(
+                        id=counter, artist="SubDaap", album="RevisionServer",
+                        name="Item %d" % counter, duration=counter)
+                    container_item = ContainerItem(id=counter, item_id=item.id)
                     counter += 1
 
                     # Add
                     database.items.add(item)
                     database.containers[1].container_items.add(container_item)
-                    logger.info("Added item %d. %d in container." % (item.id, len(database.items)))
+                    logger.info(
+                        "Added item %d. %d items in container." % (
+                            item.id, len(database.items)))
                 else:
                     if len(database.items) == 0:
                         continue
 
                     item = random.choice(database.items.values())
-                    container_item = database.containers[1].container_items[item.id]
+                    container_item = database.containers[1] \
+                                             .container_items[item.id]
 
                     # Remove
-                    database.containers[1].container_items.remove(container_item)
+                    database.containers[1] \
+                            .container_items.remove(container_item)
                     database.items.remove(item)
-                    logger.info("Removed item %d. %d in container left." % (item.id, len(database.items)))
+                    logger.info(
+                        "Removed item %d. %d in items container left." % (
+                            item.id, len(database.items)))
 
                 # Re-add the database, so it is marked as edited.
                 database.containers.add(database.containers[1])
@@ -79,7 +88,7 @@ class RevisionProvider(provider.Provider):
             self.ready.clear()
 
             # Wait until next operation
-            gevent.sleep(5.0)
+            gevent.sleep(3.0)
 
     def wait_for_update(self):
         # In a real server, this should block until an update, and return the
@@ -93,15 +102,17 @@ class RevisionProvider(provider.Provider):
         # Normally, you would provide a file pointer or raw bytes here.
         raise NotImplemented("Not supported for this example")
 
-def main(port=3688):
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+
+def main():
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
     # Create server
     server = DaapServer(
         provider=RevisionProvider(),
         server_name="DaapServer",
-        port=3688,
-        debug=True)
+        port=3688)
 
     # Start a server and wait
     server.serve_forever()

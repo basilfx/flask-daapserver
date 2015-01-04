@@ -1,4 +1,4 @@
-from daapserver import revision, utils
+from daapserver import revision, constants, utils
 
 KEY_DATABASES = 0x01
 KEY_ITEMS = 0x02
@@ -112,7 +112,7 @@ class Collection(object):
 
         return {
             k for k in keys & keys_other if self.parent.storage.info(
-                key, k, revision=self.revision)[1] == revision.EDIT
+                key, k, revision=self.revision)[1] == constants.EDIT
         }
 
     def added(self, other):
@@ -127,12 +127,12 @@ class Collection(object):
         return other.added(self)
 
 
-class Server(object):
+class BaseServer(object):
     __slots__ = ("storage", "key", "id", "databases")
 
     collection_class = Collection
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         self.storage = revision.TreeRevisionStorage()
         self.key = 0
 
@@ -144,13 +144,13 @@ class Server(object):
         return utils.to_tree(self, ("Databases", self.databases))
 
 
-class Database(object):
+class BaseDatabase(object):
     __slots__ = (
         "storage", "key", "items", "containers", "id", "persistent_id", "name")
 
     collection_class = Collection
 
-    def __init__(self, storage=None, revision=None, **kwargs):
+    def __init__(self, storage=None, revision=None):
         self.storage = storage
         self.key = 0
 
@@ -167,13 +167,13 @@ class Database(object):
             self, ("Items", self.items), ("Containers", self.containers))
 
 
-class Item(object):
+class BaseItem(object):
     __slots__ = (
         "storage", "key", "id", "persistent_id", "database_id", "name",
         "track", "artist", "album", "year", "bitrate", "duration", "file_size",
         "file_name", "file_type", "file_suffix", "album_art", "genre")
 
-    def __init__(self, storage=None, revision=None, **kwargs):
+    def __init__(self, storage=None, revision=None):
         self.storage = storage
         self.key = 0
 
@@ -198,14 +198,14 @@ class Item(object):
         return utils.to_tree(self)
 
 
-class Container(object):
+class BaseContainer(object):
     __slots__ = (
         "storage", "key", "container_items", "id", "database_id",
         "persistent_id", "parent_id", "name", "is_smart", "is_base")
 
     collection_class = Collection
 
-    def __init__(self, storage=None, revision=None, **kwargs):
+    def __init__(self, storage=None, revision=None):
         self.storage = storage
         self.key = 0
 
@@ -224,12 +224,12 @@ class Container(object):
         return utils.to_tree(self, ("Container Items", self.container_items))
 
 
-class ContainerItem(object):
+class BaseContainerItem(object):
     __slots__ = (
         "storage", "key", "id", "persistent_id", "container_id", "database_id",
         "item_id", "order")
 
-    def __init__(self, storage=None, revision=None, **kwargs):
+    def __init__(self, storage=None, revision=None):
         self.storage = storage
         self.key = 0
 
@@ -242,3 +242,73 @@ class ContainerItem(object):
 
     def to_tree(self):
         return utils.to_tree(self)
+
+
+class Server(BaseServer):
+    """
+    Wrapper for BaseServer with kwargs support.
+    """
+
+    __slots__ = BaseServer.__slots__
+
+    def __init__(self, *args, **kwargs):
+        super(Server, self).__init__(*args)
+
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+
+
+class Database(BaseDatabase):
+    """
+    Wrapper for BaseDatabase with kwargs support.
+    """
+
+    __slots__ = BaseDatabase.__slots__
+
+    def __init__(self, *args, **kwargs):
+        super(Database, self).__init__(*args)
+
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+
+
+class Container(BaseContainer):
+    """
+    Wrapper for BaseContainer with kwargs support.
+    """
+
+    __slots__ = BaseContainer.__slots__
+
+    def __init__(self, *args, **kwargs):
+        super(Container, self).__init__(*args)
+
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+
+
+class Item(BaseItem):
+    """
+    Wrapper for BaseItem with kwargs support.
+    """
+
+    __slots__ = BaseItem.__slots__
+
+    def __init__(self, *args, **kwargs):
+        super(Item, self).__init__(*args)
+
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
+
+
+class ContainerItem(BaseContainerItem):
+    """
+    Wrapper for BaseContainerItem with kwargs support.
+    """
+
+    __slots__ = BaseContainerItem.__slots__
+
+    def __init__(self, *args, **kwargs):
+        super(ContainerItem, self).__init__(*args)
+
+        for key, value in kwargs.iteritems():
+            setattr(self, key, value)
