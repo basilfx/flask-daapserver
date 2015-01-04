@@ -11,6 +11,16 @@ except ImportError:
         "Warning: Cython not installed. Slower Python-only alternatives will "
         "be used instead.\n")
 
+# Detect Pypy
+try:
+    import __pypy__
+    dependency_links = [
+        "pip install cython git+git://github.com/surfly/gevent.git#egg=gevent"]
+except ImportError:
+    __pypy__ = None
+    dependency_links = []
+
+
 # Setup definitions
 setup(
     name="flask_daapserver",
@@ -21,6 +31,7 @@ setup(
     author_email="basstottelaar@gmail.com",
     packages=["daapserver"],
     package_dir={"daapserver": "daapserver"},
+    dependency_links=dependency_links,
     setup_requires=["nose"],
     install_requires=["flask", "zeroconf", "gevent"],
     platforms=["any"],
@@ -43,6 +54,6 @@ setup(
         "Topic :: Multimedia :: Sound/Audio :: Players",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
-        'Programming Language :: Cython'
+        "Programming Language :: Cython"
     ]
 )
