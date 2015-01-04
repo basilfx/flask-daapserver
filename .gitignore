@@ -1,6 +1,5 @@
 *.pyc
 
-
 # Cython specific files
 build
 daapserver/*.html

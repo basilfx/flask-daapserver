@@ -2,20 +2,16 @@
 DAAP server for streaming media, built around the Flask micro framework.
 
 ## Installation
-First install dependencies:
-* `pip install git+https://github.com/basilfx/pybonjour-python3`
-* `pip install gevent` (for Pypy: `pip install git+https://github.com/surfly/gevent`)
-* `pip install flask`
+Make sure Cython is installed. While not required, it can boost performance of some modules significantly.
 
-Then Flask-DAAPServer:
-* `pip install git+https://github.com/basilfx/flask-daapserver`
+To install, simply run `pip install git+https://github.com/basilfx/flask-daapserver`. It should install all dependencies.
 
 ## Examples
 There are three examples included in the `examples/` directory.
 
-* `Benchmark.py` &mdash; Benchmark revision tree speed and memory usage
-* `ExampleServer.py` &mdash; Most basic example of a DAAP server
-* `RevisionServer.py` &mdash; Demonstration of revisioning capabilities
+* `Benchmark.py` &mdash; Benchmark revision tree speed and memory usage.
+* `ExampleServer.py` &mdash; Most basic example of a DAAP server.
+* `RevisionServer.py` &mdash; Demonstration of revisioning capabilities.
 
 ## License
 See the `LICENSE` file (MIT license).

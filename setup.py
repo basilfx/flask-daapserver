@@ -1,6 +1,15 @@
-from Cython.Build import cythonize
-
 from distutils.core import setup
+
+import sys
+
+# Make Cython optional
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    cythonize = lambda x: None
+    sys.stderr.write(
+        "Warning: Cython not installed. Slower Python-only alternatives will "
+        "be used instead\n")
 
 # Setup definitions
 setup(
@@ -9,9 +18,9 @@ setup(
     description="DAAP server framework implemented with Flask",
     author="Bas Stottelaar",
     author_email="basstottelaar@gmail.com",
-    packages=["daapserver"] ,
-    package_dir={"daapserver": "daapserver"} ,
-    install_requires=["cython", "flask", "zeroconf", "gevent"],
+    packages=["daapserver"],
+    package_dir={"daapserver": "daapserver"},
+    install_requires=["flask", "zeroconf", "gevent"],
     license="MIT",
     keywords="daap flask daapserver itunes home sharing",
     ext_modules=cythonize([
@@ -29,5 +38,6 @@ setup(
         "Topic :: Multimedia :: Sound/Audio :: Players",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
+        'Programming Language :: Cython'
     ]
 )
