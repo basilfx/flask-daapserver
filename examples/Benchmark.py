@@ -110,7 +110,7 @@ def measure(test, disable_gc):
     # Take end time
     end = time.time()
 
-    # Measure memory
+    # Measure memory, if psutil is installed and loaded.
     if psutil:
         memory = psutil.Process().get_memory_info()[0] / 1024 / 1024
     else:

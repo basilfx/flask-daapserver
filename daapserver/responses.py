@@ -4,6 +4,7 @@ from daapserver import daap
 
 def login(provider, session_id):
     """
+    Generate a login response.
     """
 
     return DAAPObject("dmap.loginresponse", [
@@ -14,6 +15,7 @@ def login(provider, session_id):
 
 def update(provider, revision):
     """
+    Generate an update response.
     """
 
     return DAAPObject("dmap.updateresponse", [
@@ -24,6 +26,7 @@ def update(provider, revision):
 
 def content_codes(provider):
     """
+    Generate supported content codes response.
     """
 
     children = [DAAPObject("dmap.status", 200)]
@@ -46,11 +49,11 @@ def content_codes(provider):
 
 def server_info(provider, server_name, password):
     """
+    Generate server info response
     """
 
     data = [
         DAAPObject("dmap.status", 200),
-        DAAPObject("dmap.protocolversion", "2.0.0"),
         DAAPObject("daap.protocolversion", "3.0.0"),
         DAAPObject("dmap.itemname", server_name),
         DAAPObject("dmap.timeoutinterval", 1800),
@@ -77,6 +80,7 @@ def server_info(provider, server_name, password):
 
 def databases(provider, new, old, added, removed, is_update):
     """
+    Generate databases response.
     """
 
     # Single database response
@@ -112,6 +116,7 @@ def databases(provider, new, old, added, removed, is_update):
 
 def containers(provider, new, old, added, removed, is_update):
     """
+    Generate containers response.
     """
 
     # Single container response
@@ -153,6 +158,7 @@ def containers(provider, new, old, added, removed, is_update):
 
 def container_items(provider, new, old, added, removed, is_update):
     """
+    Generate container items response.
     """
 
     # Single container response
@@ -187,6 +193,7 @@ def container_items(provider, new, old, added, removed, is_update):
 
 def items(provider, new, old, added, removed, is_update):
     """
+    Generate items response.
     """
 
     # Single item response
