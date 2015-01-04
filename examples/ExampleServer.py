@@ -1,7 +1,7 @@
 from gevent.pywsgi import WSGIServer
 
 from daapserver.models import Server, Database, Item, Container, ContainerItem
-from daapserver import zeroconf, provider, create_daap_server
+from daapserver import DaapServer
 
 import sys
 import logging
@@ -65,27 +65,18 @@ class ExampleProvider(provider.Provider):
         # Normally, you would provide a file pointer or raw bytes here.
         raise NotImplemented("Not supported for this example")
 
-def main(port=3688):
+def main():
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
-    # Create provider
-    example_provider = ExampleProvider()
-
-    # Register Zeroconf
-    service = zeroconf.Zeroconf("DaapServer", port, stype="_daap._tcp")
-    service.publish()
+    # Create server
+    server = DaapServer(
+        provider=ExampleProvider(),
+        server_name="DaapServer",
+        port=3688,
+        debug=True)
 
     # Start a server and wait
-    application = create_daap_server(example_provider, server_name="DaapServer")
-    server = WSGIServer(("", port), application=application)
-
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-
-    # Unpublish
-    service.unpublish()
+    server.serve_forever()
 
 # E.g. `python ExampleServer.py'
 if __name__ == "__main__":

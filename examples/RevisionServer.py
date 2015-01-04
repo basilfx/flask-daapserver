@@ -1,7 +1,5 @@
-from gevent.pywsgi import WSGIServer
-
 from daapserver.models import Server, Database, Item, Container, ContainerItem
-from daapserver import zeroconf, provider, create_daap_server
+from daapserver import DaapServer
 
 import sys
 import logging
@@ -50,7 +48,7 @@ class RevisionProvider(provider.Provider):
         while True:
             with self.lock:
                 # Decide what to do
-                if random.choice(["add", "add", "add", "del"]) == "add":
+                if random.choice(["add", "add", "del"]) == "add":
                     item = Item(id=counter, artist="SubDaap", album="RevisionServer", name="Item %d" % counter, duration=counter)
                     container_item = ContainerItem(id=counter, item=item)
                     counter += 1
@@ -98,24 +96,15 @@ class RevisionProvider(provider.Provider):
 def main(port=3688):
     logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
-    # Create provider
-    example_provider = RevisionProvider()
-
-    # Register Zeroconf
-    service = zeroconf.Zeroconf("DaapServer", port, stype="_daap._tcp")
-    service.publish()
+    # Create server
+    server = DaapServer(
+        provider=RevisionProvider(),
+        server_name="DaapServer",
+        port=3688,
+        debug=True)
 
     # Start a server and wait
-    application = create_daap_server(example_provider, server_name="DaapServer")
-    server = WSGIServer(("", port), application=application)
-
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-
-    # Unpublish
-    service.unpublish()
+    server.serve_forever()
 
 # E.g. `python ExampleServer.py'
 if __name__ == "__main__":

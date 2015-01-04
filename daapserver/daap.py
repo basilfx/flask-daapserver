@@ -103,7 +103,7 @@ class DAAPObject(object):
             # Pack data: 4 characters for the code, 4 bytes for the length
             # and length bytes for the value
             try:
-                return struct.pack("!4sI%s" % (packing), self.code, length,
+                return struct.pack("!4sI%s" % packing, self.code, length,
                     value)
             except struct.error as e:
                 raise ValueError("Error while packing code '%s' ('%s'): %s" %

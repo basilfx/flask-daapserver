@@ -1,9 +1,6 @@
-import sys
-
 from gevent.pywsgi import WSGIServer
 
 from daapserver.models import Server, Database, Item, Container, ContainerItem
-from daapserver import zeroconf, provider, create_daap_server
 
 import gc
 import sys
