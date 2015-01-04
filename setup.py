@@ -11,17 +11,17 @@ setup(
     author_email="basstottelaar@gmail.com",
     packages=["daapserver"] ,
     package_dir={"daapserver": "daapserver"} ,
-    install_requires=["cython", "flask", "zeroconf"],
-    license = "MIT",
-    keywords = "daap flask daapserver itunes home sharing",
-    ext_modules = cythonize([
+    install_requires=["cython", "flask", "zeroconf", "gevent"],
+    license="MIT",
+    keywords="daap flask daapserver itunes home sharing",
+    ext_modules=cythonize([
         "daapserver/daap.py",
         "daapserver/daap_data.py",
         "daapserver/responses.py",
         "daapserver/revision.py",
         "daapserver/models.py",
     ]),
-    classifiers = [
+    classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
@@ -29,5 +29,5 @@ setup(
         "Topic :: Multimedia :: Sound/Audio :: Players",
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",
-    ],
+    ]
 )
