@@ -14,7 +14,8 @@ except ImportError:
 # Detect PyPy and fix dependencies
 try:
     import __pypy__ # noqa
-    dependency_links = ["git+git://github.com/surfly/gevent.git#egg=gevent"]
+    dependency_links = [
+        "http://github.com/surfly/gevent/tarball/master#egg=gevent"]
     install_requires = ["flask", "zeroconf"]
 except ImportError:
     dependency_links = []
