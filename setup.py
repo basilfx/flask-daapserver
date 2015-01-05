@@ -16,7 +16,7 @@ try:
     import __pypy__ # noqa
     dependency_links = [
         "http://github.com/surfly/gevent/tarball/master#egg=gevent"]
-    install_requires = ["flask", "zeroconf"]
+    install_requires = ["flask", "zeroconf", "gevent"]
 except ImportError:
     dependency_links = []
     install_requires = ["flask", "zeroconf", "gevent"]
