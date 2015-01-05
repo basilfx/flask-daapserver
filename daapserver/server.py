@@ -41,7 +41,7 @@ class ObjectResponse(Response):
 
 
 def create_server_app(provider, server_name, password=None, cache=True,
-                      debug=False):
+                      cache_timeout=3600, debug=False):
     """
     Create a DAAP server, based around a Flask application. The server requires
     a content provider, server name and optionally, a password. The content
@@ -155,7 +155,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
 
             if value is None:
                 value = func(*args, **kwargs)
-                cache.set(key, value, timeout=3600 * 6)
+                cache.set(key, value, timeout=cache_timeout)
             return value
         return _inner if cache else func
 
