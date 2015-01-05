@@ -9,9 +9,17 @@ __version__ = "2.2.0"
 
 
 class DaapServer(object):
+    """
+    DAAP Server instance. Combine all components from this module in a ready
+    to use class.
+    """
 
     def __init__(self, provider, server_name, password=None, ip="0.0.0.0",
-                 port=3689, cache=True, bonjour=True, debug=False):
+                 port=3689, cache=True, cache_timeout=3600, bonjour=True,
+                 debug=False):
+        """
+        Construct a new DAAP Server.
+        """
 
         self.provider = provider
         self.server_name = server_name
@@ -19,6 +27,7 @@ class DaapServer(object):
         self.ip = ip
         self.port = port
         self.cache = cache
+        self.cache_timeout = cache_timeout
         self.bonjour = Bonjour() if bonjour else None
         self.debug = debug
 
@@ -29,6 +38,8 @@ class DaapServer(object):
 
     def serve_forever(self):
         """
+        Run the DAAP server. Start by advertising the server via Bonjour. Then
+        serve requests until CTRL + C is received.
         """
 
         # Create WSGI server
