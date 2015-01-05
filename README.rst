@@ -57,6 +57,9 @@ To install, simply run
 ``pip install git+https://github.com/basilfx/flask-daapserver``. It
 should install all dependencies.
 
+PyPy 2.4 or later is supported. While all tests pass and examples work,
+it should be considered experimental.
+
 Usage
 -----
 
