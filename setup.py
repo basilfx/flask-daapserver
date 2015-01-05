@@ -23,7 +23,7 @@ except ImportError:
 
 # Setup definitions
 setup(
-    name="flask_daapserver",
+    name="flask-daapserver",
     version="2.2.0",
     description="DAAP server framework implemented with Flask",
     long_description=open("README.rst").read(),
