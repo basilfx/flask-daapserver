@@ -16,10 +16,8 @@ try:
     import __pypy__ # noqa
     dependency_links = [
         "http://github.com/surfly/gevent/tarball/master#egg=gevent"]
-    install_requires = ["flask", "zeroconf", "gevent"]
 except ImportError:
     dependency_links = []
-    install_requires = ["flask", "zeroconf", "gevent"]
 
 
 # Setup definitions
@@ -34,7 +32,7 @@ setup(
     package_dir={"daapserver": "daapserver"},
     setup_requires=["nose"],
     dependency_links=dependency_links,
-    install_requires=install_requires,
+    install_requires=["flask", "zeroconf", "gevent"],
     platforms=["any"],
     license="MIT",
     url="https://github.com/basilfx/flask-daapserver",
