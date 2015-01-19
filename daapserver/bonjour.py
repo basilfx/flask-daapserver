@@ -20,7 +20,6 @@ class Bonjour(object):
         if server in self.servers:
             self.unpublish(server)
 
-        ip = "127.0.0.1" if server.ip == "0.0.0.0" else server.ip
         description = {
             "txtvers": 1,
             "Password": int(bool(server.password)),
@@ -29,7 +28,7 @@ class Bonjour(object):
 
         self.servers[server] = zeroconf.ServiceInfo(
             "_daap._tcp.local.", server.server_name + "._daap._tcp.local.",
-            socket.inet_aton(ip), server.port, 0, 0,
+            socket.inet_aton(server.ip), server.port, 0, 0,
             description)
         self.zeroconf.register_service(self.servers[server])
 
