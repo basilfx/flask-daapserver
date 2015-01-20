@@ -34,7 +34,7 @@ class DaapServer(object):
         # Create DAAP server app
         self.app = create_server_app(
             self.provider, self.server_name, self.password, self.cache,
-            self.debug)
+            self.cache_timeout, self.debug)
 
     def serve_forever(self):
         """
