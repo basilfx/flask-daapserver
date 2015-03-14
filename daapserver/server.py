@@ -121,7 +121,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
 
             if not auth or not auth.password == password:
                 return Response(None, 401, {
-                    'WWW-Authenticate': 'Basic realm="%s"' % server_name})
+                    "WWW-Authenticate": "Basic realm=\"%s\"" % server_name})
             return func(*args, **kwargs)
         return _inner if password else func
 
@@ -379,7 +379,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @daap_cache_response
     @daap_unpack_args
     def database_container_item(database_id, container_id, session_id,
-                                revision, delta, type):
+                                revision, delta):
         """
         """
 

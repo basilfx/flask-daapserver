@@ -54,7 +54,8 @@ def server_info(provider, server_name, password):
 
     data = [
         DAAPObject("dmap.status", 200),
-        DAAPObject("daap.protocolversion", "3.0.0"),
+        DAAPObject("dmap.protocolversion", "2.0.10"),
+        DAAPObject("daap.protocolversion", "3.0.12"),
         DAAPObject("dmap.itemname", server_name),
         DAAPObject("dmap.timeoutinterval", 1800),
         DAAPObject("dmap.supportsautologout", 1),
