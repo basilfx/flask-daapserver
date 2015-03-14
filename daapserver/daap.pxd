@@ -1,5 +1,6 @@
 cimport cython
 
+
 cdef class DAAPObject(object):
     cdef object value
     cdef str code
