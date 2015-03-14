@@ -29,7 +29,7 @@ class DAAPObject(object):
             except KeyError:
                 raise ValueError("Unexpected code '%s'" % code)
 
-            self.itype = dmapCodeTypes[self.code][2]
+            self.itype = dmapCodeTypes[self.code][1]
             self.value = value
 
     def to_tree(self, level=0):
@@ -125,7 +125,7 @@ class DAAPObject(object):
 
         # Now we need to find out what type of object it is
         try:
-            self.itype = dmapCodeTypes[self.code][2]
+            self.itype = dmapCodeTypes[self.code][1]
         except KeyError:
             raise ValueError("Unknown code '%s'" % self.code)
 
@@ -133,14 +133,14 @@ class DAAPObject(object):
             start_pos = stream.tell()
             self.value = []
 
-            # The object is a container, we need to pass it it's length
+            # The object is a container, we need to pass it its length
             # amount of data for processessing
             while stream.tell() < start_pos + length:
                 obj = DAAPObject()
                 self.value.append(obj)
                 obj.decode(stream)
         else:
-            # Not a container, we"re a single atom. Read it.
+            # Not a container, we're a single atom. Read it.
             code = stream.read(length)
 
             if self.itype == 7:
@@ -164,7 +164,7 @@ class DAAPObject(object):
             elif self.itype == 10:
                 value = struct.unpack("!I", code)[0]
             elif self.itype == 9:
-                # The object is a string. The strings length is important.
+                # The object is a string. The string's length is important.
                 try:
                     value = unicode(struct.unpack(
                         "!%ss" % length, code)[0], "utf-8")
