@@ -16,10 +16,14 @@ from daapserver.daap_data import dmapDataTypes, dmapNames, \
 
 import struct
 
-__all__ = ["DAAPObject"]
+__all__ = ["DAAPObject", "SpeedyDAAPObject"]
 
 
 class DAAPObject(object):
+    """
+    Represent a DAAP data object.
+    """
+
     __slots__ = ("code", "value", "itype")
 
     def __init__(self, code=None, value=None):
@@ -64,50 +68,56 @@ class DAAPObject(object):
                     (self.code, dmapCodeTypes[self.code][0], e))
         else:
             # Determine the packing
-            value = self.value
-
             if self.itype == 11:
-                value = str(value).split(".")
-                value = struct.pack("!HH", int(value[0]), int(value[1]))
+                value = struct.pack("!HH", *self.value.split("."))
                 packing = "4s"
+                length = 4
             elif self.itype == 7:
                 packing = "q"
+                length = 8
             elif self.itype == 8:
                 packing = "Q"
+                length = 8
             elif self.itype == 5:
-                if type(value) == str and len(value) <= 4:
+                if type(self.value) == str and len(self.value) <= 4:
                     packing = "4s"
+                    length = 4
                 else:
                     packing = "i"
+                    length = 4
             elif self.itype == 6:
                 packing = "I"
+                length = 4
             elif self.itype == 3:
                 packing = "h"
+                length = 2
             elif self.itype == 4:
                 packing = "H"
+                length = 2
             elif self.itype == 1:
                 packing = "b"
+                length = 1
             elif self.itype == 2:
                 packing = "B"
+                length = 1
             elif self.itype == 10:
                 packing = "I"
+                length = 4
             elif self.itype == 9:
-                if type(value) == unicode:
-                    value = value.encode("utf-8")
+                if type(self.value) == unicode:
+                    value = self.value.encode("utf-8")
 
-                packing = "%ss" % len(value)
+                length = len(value)
+                packing = "%ss" % length
             else:
                 raise ValueError(
                     "Unexpected type %d" % dmapReverseDataTypes[self.itype])
-
-            # Calculate the length of what we"re packing
-            length = struct.calcsize("!%s" % packing)
 
             # Pack data: 4 characters for the code, 4 bytes for the length
             # and length bytes for the value
             try:
                 return struct.pack(
-                    "!4sI%s" % packing, self.code, length, value)
+                    "!4sI%s" % packing, self.code, length, self.value)
             except struct.error as e:
                 raise ValueError(
                     "Error while packing code '%s' ('%s'): %s" % (
@@ -176,3 +186,17 @@ class DAAPObject(object):
                     "Unexpected type '%s'" % dmapDataTypes[self.itype])
 
             self.value = value
+
+
+class SpeedyDAAPObject(DAAPObject):
+    """
+    Extension of DAAPObject that directly sets the values. This does not check
+    the values.
+    """
+
+    __slots__ = DAAPObject.__slots__
+
+    def __init__(self, code, itype, value):
+        self.code = code
+        self.itype = itype
+        self.value = value
