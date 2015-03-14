@@ -10,7 +10,7 @@ class Bonjour(object):
         """
         """
 
-        self.zeroconf = zeroconf.Zeroconf()
+        self.zeroconf = zeroconf.Zeroconf(zeroconf.InterfaceChoice.All)
         self.servers = {}
 
     def publish(self, server):
@@ -20,16 +20,24 @@ class Bonjour(object):
         if server in self.servers:
             self.unpublish(server)
 
+        # The IP 0.0.0.0 tells SubDaap to bind to all interfaces. However,
+        # Bonjour advertises itself to others, so others need an actual IP.
+        if server.ip == "0.0.0.0":
+            addresses = socket.inet_aton(
+                zeroconf.get_all_addresses(socket.AF_INET)[0])
+
         description = {
-            "txtvers": 1,
-            "Password": int(bool(server.password)),
+            "txtvers": "1",
+            "Password": str(int(bool(server.password))),
             "Machine Name": server.server_name
         }
 
         self.servers[server] = zeroconf.ServiceInfo(
-            "_daap._tcp.local.", server.server_name + "._daap._tcp.local.",
-            socket.inet_aton(server.ip), server.port, 0, 0,
-            description)
+            type="_daap._tcp.local.",
+            name=server.server_name + "._daap._tcp.local.",
+            address=addresses,
+            port=server.port,
+            properties=description)
         self.zeroconf.register_service(self.servers[server])
 
     def unpublish(self, server):
