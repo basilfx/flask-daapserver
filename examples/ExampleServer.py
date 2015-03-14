@@ -88,7 +88,8 @@ def main():
     server = DaapServer(
         provider=ExampleProvider(),
         server_name="DaapServer",
-        port=3688)
+        port=3688,
+        debug=True)
 
     # Start a server and wait
     server.serve_forever()

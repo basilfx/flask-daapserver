@@ -139,25 +139,25 @@ def main():
 
     for disable_gc in [True]:
         with measure("100 items", disable_gc):
-            x = BenchmarkProvider().benchmark(100)
+            BenchmarkProvider().benchmark(100)
 
         with measure("1000 items", disable_gc):
-            x = BenchmarkProvider().benchmark(1000)
+            BenchmarkProvider().benchmark(1000)
 
         with measure("10000 items", disable_gc):
-            x = BenchmarkProvider().benchmark(10000)
+            BenchmarkProvider().benchmark(10000)
 
         with measure("50000 items", disable_gc):
-            x = BenchmarkProvider().benchmark(50000)
+            BenchmarkProvider().benchmark(50000)
 
         with measure("100000 items", disable_gc):
-            x = BenchmarkProvider().benchmark(100000)
+            BenchmarkProvider().benchmark(100000)
 
-        #with measure("500000 items", disable_gc):
-        #    x = BenchmarkProvider().benchmark(500000)
+        with measure("500000 items", disable_gc):
+            BenchmarkProvider().benchmark(500000)
 
     logger.info("Done!")
 
-# E.g. `python ExampleServer.py'
+# E.g. `python Benchmark.py'
 if __name__ == "__main__":
     sys.exit(main())
