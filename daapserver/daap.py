@@ -47,9 +47,9 @@ class DAAPObject(object):
 
     def encode(self):
         # Generate DMAP tagged data format. Find out what type of object
-        # this is
+        # this is.
         if self.itype == 12:
-            # Object is a container. This means the items within `self.value'
+            # Object is a container. This means the items within `self.value'.
             # are inspected.
             value = bytearray()
             for item in self.value:
@@ -58,7 +58,7 @@ class DAAPObject(object):
             # Get the length of the data
             length = len(value)
 
-            # Pack data: 4 byte code, 4 byte length, length bytes of value
+            # Pack data: 4 byte code, 4 byte length, length bytes of value.
             try:
                 return struct.pack(
                     "!4sI%ds" % length, self.code, length, str(value))
@@ -67,9 +67,12 @@ class DAAPObject(object):
                     "Error while packing code '%s' ('%s'): %s" %
                     (self.code, dmapCodeTypes[self.code][0], e))
         else:
+            value = self.value
+
             # Determine the packing
             if self.itype == 11:
-                value = struct.pack("!HH", *self.value.split("."))
+                parts = value.split(".")
+                value = struct.pack("!HH", int(parts[0]), int(parts[2]))
                 packing = "4s"
                 length = 4
             elif self.itype == 7:
@@ -79,7 +82,7 @@ class DAAPObject(object):
                 packing = "Q"
                 length = 8
             elif self.itype == 5:
-                if type(self.value) == str and len(self.value) <= 4:
+                if type(value) == str and len(value) <= 4:
                     packing = "4s"
                     length = 4
                 else:
@@ -104,8 +107,8 @@ class DAAPObject(object):
                 packing = "I"
                 length = 4
             elif self.itype == 9:
-                if type(self.value) == unicode:
-                    value = self.value.encode("utf-8")
+                if type(value) == unicode:
+                    value = value.encode("utf-8")
 
                 length = len(value)
                 packing = "%ss" % length
@@ -117,7 +120,7 @@ class DAAPObject(object):
             # and length bytes for the value
             try:
                 return struct.pack(
-                    "!4sI%s" % packing, self.code, length, self.value)
+                    "!4sI%s" % packing, self.code, length, value)
             except struct.error as e:
                 raise ValueError(
                     "Error while packing code '%s' ('%s'): %s" % (
