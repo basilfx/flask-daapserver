@@ -56,18 +56,25 @@ def server_info(provider, server_name, password):
         DAAPObject("dmap.status", 200),
         DAAPObject("dmap.protocolversion", "2.0.10"),
         DAAPObject("daap.protocolversion", "3.0.12"),
+        DAAPObject("com.apple.itunes.music-sharing-version", 196619),
         DAAPObject("dmap.itemname", server_name),
         DAAPObject("dmap.timeoutinterval", 1800),
         DAAPObject("dmap.supportsautologout", 1),
         DAAPObject("dmap.loginrequired", 1 if password else 0),
         DAAPObject("dmap.authenticationmethod", 2 if password else 0),
+        DAAPObject("com.apple.itunes.unknown-MQ", 1),
+        DAAPObject("com.apple.itunes.unknown-Tr", 1),
+        DAAPObject("com.apple.itunes.unknown-SL", 1),
+        DAAPObject("com.apple.itunes.unknown-SR", 1),
         DAAPObject("dmap.supportsextensions", 1),
         DAAPObject("dmap.supportsindex", 1),
         DAAPObject("dmap.supportsbrowse", 1),
         DAAPObject("dmap.supportsquery", 1),
-        DAAPObject("dmap.databasescount", 1),
+        DAAPObject("daap.supportsgroups", 0),
+        DAAPObject("dmap.databasescount", len(provider.server.databases)),
         DAAPObject("dmap.supportsupdate", 1),
-        DAAPObject("dmap.supportsresolve", 1)
+        DAAPObject("dmap.supportsresolve", 1),
+        DAAPObject("dmap.supportsedit", 0)
     ]
 
     if provider.supports_persistent_id:

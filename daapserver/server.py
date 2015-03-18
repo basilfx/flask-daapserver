@@ -81,7 +81,8 @@ def create_server_app(provider, server_name, password=None, cache=True,
 
         @wraps(func)
         def _inner(environment, start_response):
-            if environment["PATH_INFO"].startswith("daap://"):
+            if environment["PATH_INFO"].startswith("daap://") or \
+                    environment["PATH_INFO"].startswith("http://"):
                 environment["PATH_INFO"] = "/" + \
                     environment["PATH_INFO"].split("/", 3)[3]
             return func(environment, start_response)
