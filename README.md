@@ -4,7 +4,7 @@ DAAP server for streaming media, built around the Flask micro framework. Support
 [![Build Status](https://travis-ci.org/basilfx/flask-daapserver.svg?branch=master)](https://travis-ci.org/basilfx/flask-daapserver)
 
 ## Introduction.
-The Digital Audio Access Protocol (DAAP) is a protocol designed by Apple to share media over the network, using HTTP as transport layer. It advertises servers via Bonjour/Zeroconf over the network.
+The Digital Audio Access Protocol (DAAP) is a protocol designed by Apple to share media over the network, using HTTP as transport layer. It advertises itself via Bonjour/Zeroconf.
 
 This Python module implements the full stack, by providing a HTTP server (built around Flask), a high-level application layer and Bonjour/Zeroconf advertising.
 
@@ -30,13 +30,20 @@ To install, simply run `pip install git+https://github.com/basilfx/flask-daapser
 
 PyPy 2.4 or later is supported. While all tests pass and examples work, it should be considered experimental.
 
+### Experimental
+The script `utils/transform.py` can rewrite Python source code to make it more efficient at the expense of readability. It rewrites the following functions:
+
+* `DAAPObject(x, y)` into `SpeedyDAAPObject(code[x], type[x], y)`. Saves two lookups and simplifies instantiation and does no checking.
+
+In combination with Cython (run before Cythonizing), more speeds improvements can be realized. To run this script, run `python utils/transform.py <input_file> <output_file>`, e.g. `python utils/transform.py daapserver/response.py daapserver/response_out.py`.
+
 ## Usage
 Take a look at the examples, or to the projects using Flask-DAAPServer:
 
 * [SubDaap](https://github.com/basilfx/SubDaap) &mdash; Bridge between SubSonic and iTunes.
 
 ## Examples
-There are three examples included in the `examples/` directory. You can run them with `python <filename>`.
+There are three examples included in the `examples/` directory. You can run them with `python examples/<filename>`.
 
 * `Benchmark.py` &mdash; Benchmark revision tree speed and memory usage.
 * `ExampleServer.py` &mdash; Most basic example of a DAAP server.
