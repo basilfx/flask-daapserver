@@ -61,7 +61,7 @@ def parse_file(input_file, output_file):
 
 def main():
     """
-    Wrapper for commandline access.
+    Wrapper for command line access.
     """
 
     # Parse arguments and configure application instance.
