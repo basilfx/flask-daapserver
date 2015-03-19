@@ -42,6 +42,7 @@ class TreeRevisionStorage(object):
         for set operations, since two sequential edits don't increment.
         """
         self.last_operation = constants.NOOP
+        self.revision += 1
 
     def clean(self, up_to_revision=None):
         """
