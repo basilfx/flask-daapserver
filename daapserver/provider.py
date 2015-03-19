@@ -6,6 +6,12 @@ __all__ = ("LocalFileProvider", "Provider", "Session")
 
 
 class DummyLock(object):
+    """
+    Dummy lock implementation.
+    """
+
+    __slots__ = ()
+
     def __enter__(self):
         pass
 
@@ -44,6 +50,10 @@ class Provider(object):
 
     def __init__(self):
         """
+        Create a new Provider.
+
+        Note: `self.server' should be declared. If using a threaded server,
+        make sure `self.lock` is an applicable lock.
         """
 
         self.server = None
@@ -53,6 +63,10 @@ class Provider(object):
 
     def create_session(self):
         """
+        Create a new session.
+
+        :return: The new session id
+        :rtype: int
         """
 
         self.session_counter += 1
@@ -62,6 +76,7 @@ class Provider(object):
 
     def destroy_session(self, session_id):
         """
+        Destroy an (existing) session.
         """
 
         try:
@@ -71,6 +86,17 @@ class Provider(object):
 
     def get_revision(self, session_id, revision, delta):
         """
+        Determine the next revision number for a given session id, revision
+        and delta.
+
+        In case the client is up-to-date, this method will block via
+        `self.wait_for_update` until the next revision is available.
+
+        :param int session_id: Session identifier
+        :param int revision: Client revision number
+        :param int delta: Client revision delta (old client version number)
+        :return: Next revision number
+        :rtype: int
         """
 
         session = self.sessions[session_id]
@@ -91,6 +117,8 @@ class Provider(object):
 
     def check_sessions(self):
         """
+        Check if the revision history can be cleaned. This is the case when
+        all connected clients have the same revision as the server has.
         """
 
         lowest_revision = min(
@@ -103,6 +131,11 @@ class Provider(object):
 
     def wait_for_update(self):
         """
+        Wait for the next revision to become available. This method should
+        block and return the next revision number.
+
+        :return: Next revision number
+        :rtype: int
         """
 
         raise NotImplemented("Needs to be overridden")
