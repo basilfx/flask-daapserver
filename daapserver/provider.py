@@ -1,3 +1,5 @@
+from daapserver.utils import parse_byte_range
+
 from enum import Enum
 from datetime import datetime
 
@@ -334,21 +336,27 @@ class LocalFileProvider(Provider):
         Return a file pointer to the item data.
         """
 
-        begin, end = byte_range if byte_range else 0, item.file_size
-        fp = open(item.file_path, "rb+")
+        # Parse byte range
+        if byte_range is not None:
+            begin, end = parse_byte_range(byte_range, max_byte=item.file_size)
+        else:
+            begin, end = 0, item.file_size
+
+        # Open the file
+        fp = open(item.file_name, "rb+")
 
         if not begin:
-            return fp, item.mimetype, item.file_size
+            return fp, item.file_type, item.file_size
         elif begin and not end:
             fp.seek(begin)
-            return fp, item.mimetype, item.file_size
+            return fp, item.file_type, item.file_size
         elif begin and end:
             fp.seek(begin)
 
             data = fp.read(end - begin)
             result = cStringIO.StringIO(data)
 
-            return result, item.mimetype, item.file_size
+            return result, item.file_type, item.file_size
 
     def get_artwork_data(self, session, item):
         """
