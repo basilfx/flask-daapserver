@@ -1,8 +1,18 @@
+from enum import Enum
 from datetime import datetime
 
 import cStringIO
 
 __all__ = ("LocalFileProvider", "Provider", "Session")
+
+
+class State(Enum):
+    """
+    Client session states.s
+    """
+
+    connected = 1
+    playing = 2
 
 
 class DummyLock(object):
