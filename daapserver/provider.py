@@ -14,14 +14,24 @@ class DummyLock(object):
 
 
 class Session(object):
-    __slots__ = ("revision", "since")
+    """
+    Represents a client session.
+    """
+
+    __slots__ = ("revision", "since", "user_agent", "state")
 
     def __init__(self):
         self.revision = 0
+        self.user_agent = None
         self.since = datetime.now()
+        self.state = State.connected
 
 
 class Provider(object):
+    """
+    Base provider implementation. A provider is responsible for serving the
+    data to the client. This class should be subclassed.
+    """
 
     # Class type to use for sessions
     session_class = Session
