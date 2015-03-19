@@ -11,8 +11,9 @@ class State(Enum):
     Client session states.s
     """
 
-    connected = 1
-    playing = 2
+    connecting = 1
+    connected = 2
+    streaming = 3
 
 
 class DummyLock(object):
@@ -31,16 +32,41 @@ class DummyLock(object):
 
 class Session(object):
     """
-    Represents a client session.
+    Represents a client session. The session records the user agent, remote
+    address, client version and keeps track of the number of items and artworks
+    requested.
     """
 
-    __slots__ = ("revision", "since", "user_agent", "state")
+    __slots__ = (
+        "revision", "since", "state", "remote_address", "user_agent",
+        "client_version", "counters")
 
     def __init__(self):
+        """
+        Construct a new Session object.
+        """
+
         self.revision = 0
-        self.user_agent = None
         self.since = datetime.now()
-        self.state = State.connected
+        self.state = State.connecting
+
+        self.remote_address = None
+        self.user_agent = None
+        self.client_version = None
+
+        self.counters = {
+            "items": 0,
+            "artworks": 0
+        }
+
+    def increase_counter(self, counter):
+        """
+        Increase a counter value.
+
+        :param str counter: Name of the counter
+        """
+
+        self.counters[counter] += 1
 
 
 class Provider(object):
@@ -71,16 +97,24 @@ class Provider(object):
         self.session_counter = 0
         self.lock = DummyLock()
 
-    def create_session(self):
+    def create_session(self, user_agent, remote_address, client_version):
         """
         Create a new session.
 
+        :param str user_agent: Client user agent
+        :param str remote_addr: Remote address of client
+        :param str client_version: Remote client version
         :return: The new session id
         :rtype: int
         """
 
         self.session_counter += 1
-        self.sessions[self.session_counter] = self.session_class()
+        self.sessions[self.session_counter] = session = self.session_class()
+
+        # Set session properties
+        session.user_agent = user_agent
+        session.remote_address = remote_address
+        session.client_version = client_version
 
         return self.session_counter
 
@@ -110,6 +144,7 @@ class Provider(object):
         """
 
         session = self.sessions[session_id]
+        session.state = State.connected
 
         if delta == revision:
             # Increment revision. Never decrement.
@@ -231,6 +266,9 @@ class Provider(object):
         session = self.sessions[session_id]
         item = self.server.databases[database_id].items[item_id]
 
+        session.state = State.streaming
+        session.increase_counter("items")
+
         return self.get_item_data(session, item, byte_range)
 
     def get_artwork(self, session_id, database_id, item_id):
@@ -239,6 +277,8 @@ class Provider(object):
 
         session = self.sessions[session_id]
         item = self.server.databases[database_id].items[item_id]
+
+        session.increase_counter("artworks")
 
         return self.get_artwork_data(session, item)
 
@@ -253,7 +293,13 @@ class Provider(object):
         is requested, add a fourth tuple item, length. The length should be the
         size of the requested data that is being returned.
 
-        Note: this method requires `Provider.supports_artwork = True'
+        Note: this method requires `Provider.supports_artwork = True`
+
+        :param Session session: Client session
+        :param Item item: Requested item.
+        :param tuple byte_range: Optional byte range to return a part of the
+                                 file.
+        :return: File descriptor, iterator or raw bytes.
         """
 
         raise NotImplemented("Needs to be overridden")
@@ -265,17 +311,29 @@ class Provider(object):
         The result should be an tuple, of the form (data, mimetype, size). The
         data can be an iterator, file descriptor or raw bytes.
 
-        Note: this method requires `Provider.supports_artwork = True'
+        Note: this method requires `Provider.supports_artwork = True`
+
+        :param Session session: Client session
+        :param Item item: Requested item.
+        :return: File descriptor, iterator or raw bytes.
         """
 
         raise NotImplemented("Needs to be overridden")
 
 
 class LocalFileProvider(Provider):
+    """
+    Tiny implementation of a local file provider. Streams items and data from
+    disk.
+    """
 
     supports_artwork = True
 
-    def get_item(self, session, item, byte_range=None):
+    def get_item_data(self, session, item, byte_range=None):
+        """
+        Return a file pointer to the item data.
+        """
+
         begin, end = byte_range if byte_range else 0, item.file_size
         fp = open(item.file_path, "rb+")
 
@@ -293,6 +351,10 @@ class LocalFileProvider(Provider):
             return result, item.mimetype, item.file_size
 
     def get_artwork_data(self, session, item):
+        """
+        Return a file pointer to artwork.
+        """
+
         fp = open(item.artwork, "rb+")
 
         return fp, None, None
