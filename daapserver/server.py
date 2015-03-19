@@ -125,6 +125,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
                     "WWW-Authenticate": "Basic realm=\"%s\"" % server_name})
             return func(*args, **kwargs)
         return _inner if password else func
+    app.authenticate = daap_authenticate
 
     def daap_cache_response(func=None):
         """
