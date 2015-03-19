@@ -8,6 +8,7 @@ from functools import wraps
 
 import hashlib
 import inspect
+import time
 
 # Mapping for query string arguments to function arguments. Used by the
 # daap_unpack_args decorator.
@@ -88,6 +89,39 @@ def create_server_app(provider, server_name, password=None, cache=True,
             return func(environment, start_response)
         return _inner
     app.wsgi_app = daap_wsgi_app(app.wsgi_app)
+
+    def daap_trace(func):
+        """
+        Utility method for tracing function calls. Helps debugging malicious
+        requests (e.g. protocol changes). Is only enabled when `debug` is True.
+        Normally, exceptions are caught by Flask and handled as Bad Requests.
+        Any debugging is therefore lost.
+        """
+
+        if not debug:
+            return func
+
+        # Import and prepare logging here. It's the only place where it is
+        # used. Alternatively, the Flask App logging could be used.
+        import logging
+        logger = logging.getLogger(__name__)
+
+        @wraps(func)
+        def _inner(*args, **kwargs):
+            try:
+                start = time.time()
+                result = func(*args, **kwargs)
+                logger.debug(
+                    "Request handling took %.6f seconds",
+                    time.time() - start)
+
+                return result
+            except:
+                logger.exception(
+                    "Caught exception before returning it to Flask.")
+                raise
+
+        return _inner
 
     def daap_unpack_args(func):
         """
@@ -178,6 +212,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return response
 
     @app.route("/server-info", methods=["GET"])
+    @daap_trace
     @daap_cache_response
     def server_info():
         """
@@ -188,6 +223,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return ObjectResponse(data)
 
     @app.route("/content-codes", methods=["GET"])
+    @daap_trace
     @daap_cache_response
     def content_codes():
         """
@@ -198,17 +234,23 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return ObjectResponse(data)
 
     @app.route("/login", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     def login():
         """
         """
 
-        session_id = provider.create_session()
+        session_id = provider.create_session(
+            user_agent=request.headers.get("User-Agent"),
+            remote_address=request.remote_addr,
+            client_version=request.headers.get(
+                "Client-DAAP-Version"))
         data = responses.login(provider, session_id)
 
         return ObjectResponse(data)
 
     @app.route("/logout", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_unpack_args
     def logout(session_id):
@@ -220,6 +262,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return Response(None, status=204)
 
     @app.route("/activity", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_unpack_args
     def activity(session_id):
@@ -229,6 +272,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return Response(None, status=200)
 
     @app.route("/update", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_unpack_args
     def update(session_id, revision, delta):
@@ -242,6 +286,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return ObjectResponse(data)
 
     @app.route("/fp-setup", methods=["POST"])
+    @daap_trace
     @daap_authenticate
     def fp_setup():
         """
@@ -252,6 +297,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         raise NotImplemented
 
     @app.route("/databases", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_cache_response
     @daap_unpack_args
@@ -270,6 +316,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @app.route(
         "/databases/<int:database_id>/items/<int:item_id>/extra_data/artwork",
         methods=["GET"])
+    @daap_trace
     @daap_unpack_args
     def database_item_artwork(database_id, item_id, session_id):
         """
@@ -291,6 +338,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @app.route(
         "/databases/<int:database_id>/groups/<int:group_id>/extra_data/"
         "artwork", methods=["GET"])
+    @daap_trace
     @daap_unpack_args
     def database_group_artwork(database_id, group_id, session_id, revision,
                                delta):
@@ -301,6 +349,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @app.route(
         "/databases/<int:database_id>/items/<int:item_id>.<suffix>",
         methods=["GET"])
+    @daap_trace
     @daap_unpack_args
     def database_item(database_id, item_id, suffix, session_id):
         """
@@ -334,6 +383,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return response
 
     @app.route("/databases/<int:database_id>/items", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_cache_response
     @daap_unpack_args
@@ -349,6 +399,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return ObjectResponse(data)
 
     @app.route("/databases/<int:database_id>/containers", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_cache_response
     @daap_unpack_args
@@ -366,6 +417,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         return ObjectResponse(data)
 
     @app.route("/databases/<int:database_id>/groups", methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_cache_response
     @daap_unpack_args
@@ -377,6 +429,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
     @app.route(
         "/databases/<int:database_id>/containers/<int:container_id>/items",
         methods=["GET"])
+    @daap_trace
     @daap_authenticate
     @daap_cache_response
     @daap_unpack_args
