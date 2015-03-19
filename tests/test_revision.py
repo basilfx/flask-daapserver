@@ -314,7 +314,7 @@ class TreeRevisionStorageTest(unittest.TestCase):
 
         storage.clean(up_to_revision=2)
 
-        self.assertEqual(storage.revision, 4)
+        self.assertEqual(storage.revision, 5)  # A clean() commits
         self.assertEqual(storage.last_operation, NOOP)
 
         with self.assertRaisesRegexp(KeyError, "Requested revision .*"):
@@ -325,14 +325,11 @@ class TreeRevisionStorageTest(unittest.TestCase):
 
         storage.clean()
 
-        self.assertEqual(storage.revision, 4)
+        self.assertEqual(storage.revision, 6)  # A clean() commits
         self.assertEqual(storage.last_operation, NOOP)
 
-        with self.assertRaisesRegexp(KeyError, "Requested revision .*"):
-            storage.get(PARENT, CHILD_ONE, revision=2)
-            storage.get(PARENT, CHILD_ONE, revision=3)
-        with self.assertRaisesRegexp(KeyError, "Item marked .*"):
-            storage.get(PARENT, CHILD_ONE, revision=4)
+        with self.assertRaisesRegexp(KeyError, "No item stored .*"):
+            storage.get(PARENT, CHILD_ONE, revision=5)
         self.assertEqual(storage.get(PARENT, revision=4), set([]))
 
     def test_commit(self):
@@ -361,10 +358,10 @@ class TreeRevisionStorageTest(unittest.TestCase):
         storage.commit()
         storage.set(PARENT, CHILD_ONE, 3)
 
-        self.assertEqual(storage.revision, 4)
+        self.assertEqual(storage.revision, 6)
         self.assertEqual(storage.last_operation, EDIT)
         self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=2), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=3), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=4), 3)
+        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=4), 2)
+        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=6), 3)
 
         storage = TreeRevisionStorage()
