@@ -58,3 +58,9 @@ class DaapServer(object):
         # Unregister Bonjour
         if self.bonjour:
             self.bonjour.unpublish(self)
+
+    def stop(self):
+        """
+        Stop the server.
+        """
+        self.server.stop()
