@@ -5,7 +5,7 @@ from daapserver.server import create_server_app
 
 __all__ = ["DaapServer", "Bonjour", "create_server_app"]
 
-__version__ = "2.2.0"
+__version__ = "2.3.0"
 
 
 class DaapServer(object):

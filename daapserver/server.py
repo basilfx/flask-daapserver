@@ -98,6 +98,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         Any debugging is therefore lost.
         """
 
+        # Do not apply when debug is False.
         if not debug:
             return func
 
@@ -118,7 +119,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
                 return result
             except:
                 logger.exception(
-                    "Caught exception before returning it to Flask.")
+                    "Caught exception before raising it to Flask.")
                 raise
 
         return _inner
