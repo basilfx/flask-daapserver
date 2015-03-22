@@ -6,8 +6,14 @@ import ctypes
 def diff(new, old):
     """
     Compute the difference in items of two revisioned collections. If only
-    `new' is specified, it is assumed it's not an update. If both are set,
-    first the removed items are returned. Otherwise, the added and edited ones.
+    `new' is specified, it is assumed it is not an update. If both are set,
+    the removed items are returned first. Otherwise, the added and edited ones
+    are returned.
+
+    :param set new: Set of new objects
+    :param set old: Set of old objects
+    :return: A tuple consisting of `(added, removed, is_update)`.
+    :rtype: tuple
     """
 
     added = set()
@@ -31,6 +37,9 @@ def generate_persistent_id():
     """
     Generate a persistent ID. This ID is used in the DAAP protocol to uniquely
     identify objects when they are created.
+
+    :return: A 64-bit random integer
+    :rtype: int
     """
 
     return ctypes.c_long(uuid.uuid1().int >> 64).value
@@ -42,7 +51,7 @@ def parse_byte_range(byte_range, min_byte=0, max_byte=sys.maxint):
     indices. `begin' should be smaller than `end', and both should fall within
     the `min_byte' and `max_byte'.
 
-    In case of a violation, a ValueError is raised.
+    In case of a violation, a `ValueError` is raised.
     """
 
     if not byte_range:
