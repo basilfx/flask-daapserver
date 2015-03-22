@@ -14,15 +14,13 @@ class DaapServer(object):
     to use class.
     """
 
-    def __init__(self, provider, server_name, password=None, ip="0.0.0.0",
-                 port=3689, cache=True, cache_timeout=3600, bonjour=True,
-                 debug=False):
+    def __init__(self, provider, password=None, ip="0.0.0.0", port=3689,
+                 cache=True, cache_timeout=3600, bonjour=True, debug=False):
         """
         Construct a new DAAP Server.
         """
 
         self.provider = provider
-        self.server_name = server_name
         self.password = password
         self.ip = ip
         self.port = port
@@ -33,14 +31,21 @@ class DaapServer(object):
 
         # Create DAAP server app
         self.app = create_server_app(
-            self.provider, self.server_name, self.password, self.cache,
-            self.cache_timeout, self.debug)
+            self.provider, self.password, self.cache, self.cache_timeout,
+            self.debug)
 
     def serve_forever(self):
         """
         Run the DAAP server. Start by advertising the server via Bonjour. Then
         serve requests until CTRL + C is received.
         """
+
+        # Verify that the provider has a server and at least one database.
+        if self.provider.server is None or \
+                len(self.provider.server.databases) == 0:
+            raise ValueError(
+                "Cannot server server: provider has no server or no databases "
+                "added to server")
 
         # Create WSGI server
         self.server = WSGIServer((self.ip, self.port), application=self.app)

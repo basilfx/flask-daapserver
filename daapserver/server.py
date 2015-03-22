@@ -21,7 +21,8 @@ QS_MAPPING = [
 ]
 
 # Query string arguments ignored for generating a cache key. Used by the
-# daap_cache
+# daap_cache. This makes sure that identical requests from different sessions
+# will yield from cache.
 QS_IGNORE_CACHE = [
     "session-id",
 ]
@@ -41,8 +42,8 @@ class ObjectResponse(Response):
         super(ObjectResponse, self).__init__(data.encode(), *args, **kwargs)
 
 
-def create_server_app(provider, server_name, password=None, cache=True,
-                      cache_timeout=3600, debug=False):
+def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
+                      debug=False):
     """
     Create a DAAP server, based around a Flask application. The server requires
     a content provider, server name and optionally, a password. The content
@@ -157,7 +158,8 @@ def create_server_app(provider, server_name, password=None, cache=True,
 
             if not auth or not auth.password == password:
                 return Response(None, 401, {
-                    "WWW-Authenticate": "Basic realm=\"%s\"" % server_name})
+                    "WWW-Authenticate": "Basic realm=\"%s\"" %
+                    provider.server.name})
             return func(*args, **kwargs)
         return _inner if password else func
     app.authenticate = daap_authenticate
@@ -206,7 +208,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         Append default response headers, independent of the return type.
         """
 
-        response.headers["DAAP-Server"] = server_name
+        response.headers["DAAP-Server"] = provider.server.name
         response.headers["Content-Language"] = "en_us"
         response.headers["Accept-Ranges"] = "bytes"
 
@@ -219,7 +221,7 @@ def create_server_app(provider, server_name, password=None, cache=True,
         """
         """
 
-        data = responses.server_info(provider, server_name, password)
+        data = responses.server_info(provider, provider.server.name, password)
 
         return ObjectResponse(data)
 

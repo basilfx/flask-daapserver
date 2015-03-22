@@ -128,7 +128,7 @@ class Collection(object):
 
 
 class BaseServer(object):
-    __slots__ = ("storage", "key", "id", "databases")
+    __slots__ = ("storage", "key", "id", "persistent_id", "name", "databases")
 
     collection_class = Collection
 
@@ -137,6 +137,8 @@ class BaseServer(object):
         self.key = 0
 
         self.id = None
+        self.name = None
+        self.persistent_id = None
 
         self.databases = self.collection_class(self, KEY_DATABASES)
 
