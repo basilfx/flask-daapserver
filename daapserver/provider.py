@@ -277,7 +277,8 @@ class Provider(object):
                     for chunk in data:
                         yield chunk
             finally:
-                # Change state back to connected
+                # Change state back to connected, even if an exception is
+                # raised.
                 session.state = State.connected
 
         session = self.sessions[session_id]

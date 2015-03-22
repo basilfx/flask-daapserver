@@ -6,6 +6,7 @@ Released XX March 2015
 Highlights:
 * Added: Soundcloud provider example with Album Art
 * Added: experimental pre-compiler for responses
+* Added: client information such as user agent, remote address and state
 * Fixed: iTunes 12.1 compatibility
 * Fixed: Zeroconf localhost advertising
 * Improved: DAAP responses
