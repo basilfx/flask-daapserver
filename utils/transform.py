@@ -54,6 +54,9 @@ def parse_file(input_file, output_file):
     new_tree = DAAPObjectTransformer().visit(tree)
     new_source = astor.to_source(new_tree)
 
+    # Add import statement
+    new_source = "from daapserver.daap import SpeedyDAAPObject\n" + new_source
+
     # Output new file
     with open(output_file, "w") as fp:
         fp.write(new_source)
