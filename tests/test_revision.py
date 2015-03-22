@@ -1,5 +1,5 @@
 from daapserver.revision import TreeRevisionStorage
-from daapserver.constants import NOOP, ADD, EDIT, DELETE
+from daapserver.constants import EMPTY, NOOP, ADD, EDIT, DELETE
 
 import unittest
 
@@ -241,6 +241,7 @@ class TreeRevisionStorageTest(unittest.TestCase):
         storage = TreeRevisionStorage()
 
         self.assertEqual(storage.revision, 1)
+        self.assertEqual(storage.last_operation, EMPTY)
 
         storage.set(PARENT, CHILD_ONE, 1)
         storage.set(PARENT, CHILD_TWO, 2)
@@ -312,9 +313,10 @@ class TreeRevisionStorageTest(unittest.TestCase):
         with self.assertRaisesRegexp(KeyError, "Item marked .*"):
             storage.get(PARENT, CHILD_ONE, revision=4)
 
+        # A clean commits
         storage.clean(up_to_revision=2)
 
-        self.assertEqual(storage.revision, 5)  # A clean() commits
+        self.assertEqual(storage.revision, 5)
         self.assertEqual(storage.last_operation, NOOP)
 
         with self.assertRaisesRegexp(KeyError, "Requested revision .*"):
@@ -323,9 +325,10 @@ class TreeRevisionStorageTest(unittest.TestCase):
         with self.assertRaisesRegexp(KeyError, "Item marked .*"):
             storage.get(PARENT, CHILD_ONE, revision=4)
 
+        # A clean() commits, but nothing has changed.
         storage.clean()
 
-        self.assertEqual(storage.revision, 6)  # A clean() commits
+        self.assertEqual(storage.revision, 5)
         self.assertEqual(storage.last_operation, NOOP)
 
         with self.assertRaisesRegexp(KeyError, "No item stored .*"):

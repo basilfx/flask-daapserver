@@ -13,7 +13,7 @@ class TreeRevisionStorage(object):
         self.storage = collections.defaultdict(list)
 
         self.revision = 1
-        self.last_operation = constants.NOOP
+        self.last_operation = constants.EMPTY
 
     def get_index(self, key, revision):
         """
@@ -38,11 +38,13 @@ class TreeRevisionStorage(object):
 
     def commit(self):
         """
-        Make sure next operation causes a revision increment. This is useful
-        for set operations, since two sequential edits don't increment.
+        Make sure next operation causes a revision increment, unless the last
+        operation is a NOOP already.
         """
-        self.last_operation = constants.NOOP
-        self.revision += 1
+
+        if self.last_operation != constants.NOOP:
+            self.last_operation = constants.NOOP
+            self.revision += 1
 
     def clean(self, up_to_revision=None):
         """

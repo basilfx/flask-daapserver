@@ -1,8 +1,9 @@
 cdef enum:
-    NOOP = 0x00
-    ADD = 0x01
-    EDIT = 0x02
-    DELETE = 0x04
+    EMPTY = 0x00
+    NOOP = 0x01
+    ADD = 0x02
+    EDIT = 0x04
+    DELETE = 0x08
 
 cdef enum:
     KEY = 0x01
