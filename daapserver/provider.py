@@ -265,13 +265,29 @@ class Provider(object):
         """
         """
 
+        def _inner(data):
+            # Change state to streaming
+            session.state = State.streaming
+
+            try:
+                # Yield data
+                if isinstance(data, basestring):
+                    yield data
+                else:
+                    for chunk in data:
+                        yield chunk
+            finally:
+                # Change state back to connected
+                session.state = State.connected
+
         session = self.sessions[session_id]
         item = self.server.databases[database_id].items[item_id]
 
-        session.state = State.streaming
         session.increase_counter("items")
 
-        return self.get_item_data(session, item, byte_range)
+        data, mimetype, size = self.get_item_data(session, item, byte_range)
+
+        return _inner(data), mimetype, size
 
     def get_artwork(self, session_id, database_id, item_id):
         """
