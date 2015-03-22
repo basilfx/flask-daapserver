@@ -44,12 +44,12 @@ Take a look at the examples, or to the projects using Flask-DAAPServer:
 * [SubDaap](https://github.com/basilfx/SubDaap) &mdash; Bridge between SubSonic and iTunes.
 
 ## Examples
-There are four examples included in the `examples/` directory. You can run them with `python examples/<filename>`.
+There are four examples included in the `examples/` directory. You can run them with `python examples/<filename>`. Check the source for more information and the details.
 
 * `Benchmark.py` &mdash; Benchmark revision tree speed and memory usage.
 * `ExampleServer.py` &mdash; Most basic example of a DAAP server.
 * `RevisionServer.py` &mdash; Demonstration of revisioning capabilities.
-* `SoundcloudServer.py` &mdash; Soundcloud server that streams all tracks of a certain User ID. Requires a Client ID and the Soundcloud Python module.
+* `SoundcloudServer.py` &mdash; Soundcloud server that streams all tracks of a certain users. Requires a Client ID and the Soundcloud Python module.
 
 ## License
 See the `LICENSE` file (MIT license).

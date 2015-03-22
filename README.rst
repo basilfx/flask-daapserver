@@ -88,13 +88,14 @@ Examples
 --------
 
 There are four examples included in the ``examples/`` directory. You can
-run them with ``python examples/<filename>``.
+run them with ``python examples/<filename>``. Check the source for more
+information and the details.
 
 -  ``Benchmark.py`` — Benchmark revision tree speed and memory usage.
 -  ``ExampleServer.py`` — Most basic example of a DAAP server.
 -  ``RevisionServer.py`` — Demonstration of revisioning capabilities.
 -  ``SoundcloudServer.py`` — Soundcloud server that streams all tracks
-   of a certain User ID. Requires a Client ID and the Soundcloud Python
+   of a certain users. Requires a Client ID and the Soundcloud Python
    module.
 
 License
