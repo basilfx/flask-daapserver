@@ -8,7 +8,11 @@ from functools import wraps
 
 import hashlib
 import inspect
+import logging
 import time
+
+# Logger instance
+logger = logging.getLogger(__name__)
 
 # Mapping for query string arguments to function arguments. Used by the
 # daap_unpack_args decorator.
@@ -103,11 +107,6 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
         if not debug:
             return func
 
-        # Import and prepare logging here. It's the only place where it is
-        # used. Alternatively, the Flask App logging could be used.
-        import logging
-        logger = logging.getLogger(__name__)
-
         @wraps(func)
         def _inner(*args, **kwargs):
             try:
@@ -152,6 +151,10 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
         response if the authentication failed.
         """
 
+        # Do not apply when no password is set
+        if not password:
+            return func
+
         @wraps(func)
         def _inner(*args, **kwargs):
             auth = request.authorization
@@ -161,16 +164,20 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
                     "WWW-Authenticate": "Basic realm=\"%s\"" %
                     provider.server.name})
             return func(*args, **kwargs)
-        return _inner if password else func
+        return _inner
     app.authenticate = daap_authenticate
 
-    def daap_cache_response(func=None):
+    def daap_cache_response(func):
         """
         Cache object responses if the cache has been initialized. The cache key
         is based on the request path and the semi-constant request arguments.
         The response is caches for as long as possible, which should not be a
         problem if the cache is cleared if the provider has new data.
         """
+
+        # Do not apply when cache is False.
+        if not cache:
+            return func
 
         @wraps(func)
         def _inner(*args, **kwargs):
@@ -195,8 +202,10 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
             if value is None:
                 value = func(*args, **kwargs)
                 cache.set(key, value, timeout=cache_timeout)
+            elif debug:
+                logger.debug("Loaded response from cache.")
             return value
-        return _inner if cache else func
+        return _inner
 
     #
     # Request handlers
