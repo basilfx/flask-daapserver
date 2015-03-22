@@ -20,11 +20,11 @@ class ExampleProvider(provider.Provider):
 
         # It's important that `self.server' is initialized, since it is used
         # throughout the class.
-        self.server = server = Server(id=1)
+        self.server = server = Server(id=1, name="DAAPServer")
 
         # Add example data to the library. Note that everything should be added
         # in the right order. For instance, you cannot add an item to a
-        # database that hasn't been added to a server.
+        # database that has not been added to a server yet.
         database = Database(id=1, name="Library")
         server.databases.add(database)
 
@@ -69,7 +69,7 @@ class ExampleProvider(provider.Provider):
         server.storage.commit()
 
     def wait_for_update(self):
-        # In a real server, this should block until an update, and return the
+        # In a real server, this should block until an update and return the
         # next revision number.
         while True:
             gevent.sleep(1)
@@ -87,7 +87,6 @@ def main():
     # Create server
     server = DaapServer(
         provider=ExampleProvider(),
-        server_name="DaapServer",
         port=3688,
         debug=True)
 

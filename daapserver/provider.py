@@ -333,7 +333,8 @@ class LocalFileProvider(Provider):
 
     def get_item_data(self, session, item, byte_range=None):
         """
-        Return a file pointer to the item data.
+        Return a file pointer to the item file. Assumes `item.file_name` points
+        to the file on disk.
         """
 
         # Parse byte range
@@ -360,9 +361,10 @@ class LocalFileProvider(Provider):
 
     def get_artwork_data(self, session, item):
         """
-        Return a file pointer to artwork.
+        Return a file pointer to the artwork file. Assumes `item.album_art`
+        points to the file on disk.
         """
 
-        fp = open(item.artwork, "rb+")
+        fp = open(item.album_art, "rb+")
 
         return fp, None, None

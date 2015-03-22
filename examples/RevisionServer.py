@@ -23,7 +23,7 @@ class RevisionProvider(provider.Provider):
 
         # It's important that `self.server' is initialized, since it is used
         # throughout the class.
-        self.server = server = Server()
+        self.server = server = Server(id=1, name="DAAPServer")
         self.lock = gevent.lock.Semaphore()
         self.ready = gevent.event.Event()
 
@@ -111,7 +111,6 @@ def main():
     # Create server
     server = DaapServer(
         provider=RevisionProvider(),
-        server_name="DaapServer",
         port=3688,
         debug=True)
 
