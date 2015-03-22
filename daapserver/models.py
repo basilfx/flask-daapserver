@@ -228,17 +228,16 @@ class BaseContainer(object):
 
 class BaseContainerItem(object):
     __slots__ = (
-        "storage", "key", "id", "persistent_id", "container_id", "database_id",
-        "item_id", "order")
+        "storage", "key", "id", "database_id", "container_id", "item_id",
+        "order")
 
     def __init__(self, storage=None, revision=None):
         self.storage = storage
         self.key = 0
 
         self.id = None
-        self.persistent_id = None
-        self.container_id = None
         self.database_id = None
+        self.container_id = None
         self.item_id = None
         self.order = None
 

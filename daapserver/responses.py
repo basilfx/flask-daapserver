@@ -177,11 +177,6 @@ def container_items(provider, new, old, added, removed, is_update):
             DAAPObject("dmap.containeritemid", container_item.id),
         ]
 
-        if provider.supports_persistent_id and \
-                container_item.persistent_id is not None:
-            data.append(DAAPObject(
-                "dmap.persistentid", container_item.persistent_id))
-
         return DAAPObject("dmap.listingitem", data)
 
     # Containers response
