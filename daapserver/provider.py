@@ -58,12 +58,13 @@ class Session(object):
 
         self.counters = {
             "items": 0,
+            "items_unique": 0,
             "artworks": 0
         }
 
-    def increase_counter(self, counter):
+    def increment_counter(self, counter):
         """
-        Increase a counter value.
+        Increment a counter value by one.
 
         :param str counter: Name of the counter
         """
@@ -284,7 +285,12 @@ class Provider(object):
         session = self.sessions[session_id]
         item = self.server.databases[database_id].items[item_id]
 
-        session.increase_counter("items")
+        # Increment counter for statistics. Make a distinction between requests
+        # with a byte range (play-pause) and ones without.
+        session.increment_counter("items")
+
+        if byte_range is None:
+            session.increment_counter("items_unique")
 
         data, mimetype, size = self.get_item_data(session, item, byte_range)
 
@@ -297,7 +303,8 @@ class Provider(object):
         session = self.sessions[session_id]
         item = self.server.databases[database_id].items[item_id]
 
-        session.increase_counter("artworks")
+        # Increment counter for statistics
+        session.increment_counter("artworks")
 
         return self.get_artwork_data(session, item)
 
