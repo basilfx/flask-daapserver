@@ -62,7 +62,7 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
     """
 
     # Create Flask App
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder=None)
     app.debug = debug
 
     # Setup cache
