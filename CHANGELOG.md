@@ -1,7 +1,7 @@
 # Changelog
 
 ## v2.3.0
-Released XX March 2015
+Released 05 April 2015
 
 Highlights:
 * Added: Soundcloud provider example with Album Art
@@ -9,6 +9,7 @@ Highlights:
 * Added: client information such as user agent, remote address and state
 * Fixed: iTunes 12.1 compatibility
 * Fixed: Zeroconf localhost advertising
+* Fixed: do not implicitly serve static files from Flask
 * Improved: DAAP responses
 * Improved: Zeroconf advertising includes Machine ID and Database ID
 
