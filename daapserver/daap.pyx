@@ -15,8 +15,7 @@ from daapserver.daap_data import dmapDataTypes, dmapNames, \
     dmapReverseDataTypes, dmapCodeTypes
 
 import struct
-
-__all__ = ["DAAPObject", "SpeedyDAAPObject"]
+import cython
 
 
 cdef class DAAPObject(object):
@@ -24,7 +23,7 @@ cdef class DAAPObject(object):
     Represent a DAAP data object.
     """
 
-    def __cinit__(self, code=None, value=None):
+    def __cinit__(self, str code=None, value=None):
         if code:
             try:
                 self.code = dmapNames[code]
@@ -43,26 +42,29 @@ cdef class DAAPObject(object):
             for obj in self.value:
                 yield obj.to_tree(level + 1)
 
+    @cython.boundscheck(False)
     def encode(self):
         cdef int length
         cdef str packing
+        cdef bytearray data
+        cdef object value
 
         # Generate DMAP tagged data format. Find out what type of object
         # this is.
         if self.itype == 12:
             # Object is a container. This means the items within `self.value'.
             # are inspected.
-            value = bytearray()
+            data = bytearray()
             for item in self.value:
-                value.extend(item.encode())
+                data.extend(item.encode())
 
             # Get the length of the data
-            length = len(value)
+            length = len(data)
 
-            # Pack data: 4 byte code, 4 byte length, length bytes of value.
+            # Pack data: 4 byte code, 4 byte length, length bytes of data.
             try:
                 return struct.pack(
-                    "!4sI%ds" % length, self.code, length, str(value))
+                    "!4sI%ds" % length, self.code, length, str(data))
             except struct.error as e:
                 raise ValueError(
                     "Error while packing code '%s' ('%s'): %s" %
@@ -127,8 +129,11 @@ cdef class DAAPObject(object):
                     "Error while packing code '%s' ('%s'): %s" % (
                         self.code, dmapCodeTypes[self.code][0], e))
 
+    @cython.boundscheck(False)
     def decode(self, stream):
         cdef int length
+        cdef int start_pos
+        cdef str data
 
         # Read 4 bytes for the code and 4 bytes for the length of the
         # objects data.
@@ -157,36 +162,36 @@ cdef class DAAPObject(object):
                 obj.decode(stream)
         else:
             # Not a container, we're a single atom. Read it.
-            code = stream.read(length)
+            data = stream.read(length)
 
             if self.itype == 7:
-                value = struct.unpack("!q", code)[0]
+                value = struct.unpack("!q", data)[0]
             elif self.itype == 8:
-                value = struct.unpack("!Q", code)[0]
+                value = struct.unpack("!Q", data)[0]
             elif self.itype == 5:
-                value = struct.unpack("!i", code)[0]
+                value = struct.unpack("!i", data)[0]
             elif self.itype == 6:
-                value = struct.unpack("!I", code)[0]
+                value = struct.unpack("!I", data)[0]
             elif self.itype == 3:
-                value = struct.unpack("!h", code)[0]
+                value = struct.unpack("!h", data)[0]
             elif self.itype == 4:
-                value = struct.unpack("!H", code)[0]
+                value = struct.unpack("!H", data)[0]
             elif self.itype == 1:
-                value = struct.unpack("!b", code)[0]
+                value = struct.unpack("!b", data)[0]
             elif self.itype == 2:
-                value = struct.unpack("!B", code)[0]
+                value = struct.unpack("!B", data)[0]
             elif self.itype == 11:
-                value = float("%s.%s" % struct.unpack("!HH", code))
+                value = float("%s.%s" % struct.unpack("!HH", data))
             elif self.itype == 10:
-                value = struct.unpack("!I", code)[0]
+                value = struct.unpack("!I", data)[0]
             elif self.itype == 9:
                 # The object is a string. The string's length is important.
                 try:
                     value = unicode(struct.unpack(
-                        "!%ss" % length, code)[0], "utf-8")
+                        "!%ss" % length, data)[0], "utf-8")
                 except UnicodeDecodeError:
                     value = unicode(struct.unpack(
-                        "!%ss" % length, code)[0], "latin-1")
+                        "!%ss" % length, data)[0], "latin-1")
             else:
                 raise ValueError(
                     "Unexpected type '%s'" % dmapDataTypes[self.itype])
@@ -200,7 +205,8 @@ cdef class SpeedyDAAPObject(DAAPObject):
     the values.
     """
 
-    def __cinit__(self, code, itype, value):
+    @cython.nonecheck(False)
+    def __cinit__(self, str code, int itype, object value):
         self.code = code
         self.itype = itype
         self.value = value
