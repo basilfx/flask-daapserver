@@ -1,370 +1,330 @@
-from daapserver.revision import TreeRevisionStorage
-from daapserver.constants import EMPTY, NOOP, ADD, EDIT, DELETE
+from daapserver.revision import RevisionStore
 
 import unittest
 
-# Supporting integer keys only, we define constants to represent the keys here.
-PARENT = 0x01
-CHILD = 0x02
-DUMMY = 0x03
 
-PARENT_ONE = 0x10
-PARENT_TWO = 0x20
-PARENT_THREE = 0x30
+class TestRevisionStore(unittest.TestCase):
 
-CHILD_ONE = 0x30
-CHILD_TWO = 0x40
-CHILD_THREE = 0x50
-
-DUMMY_ONE = 0x60
-DUMMY_TWO = 0x70
-DUMMY_THREE = 0x80
-
-
-class TreeRevisionStorageTest(unittest.TestCase):
-    """
-    Tests for tree revision storage.
-    """
-
-    def test_last_operation(self):
+    def assertIterEqual(self, actual, expected):
         """
-        Test if last operation is correct.
+        Helper to cast actual iterator into a list.
         """
 
-        storage = TreeRevisionStorage()
+        self.assertListEqual(list(actual), expected)
 
-        self.assertEqual(storage.revision, 1)
+    def setUp(self):
+        """
+        Initialize an empty revision store.
+        """
 
-        storage.set(PARENT, CHILD_ONE, 1)
+        self.store = RevisionStore()
 
-        self.assertEqual(storage.revision, 2)
-        self.assertEqual(storage.last_operation, ADD)
+    def test_add(self):
+        """
+        Test basic add functionality.
+        """
 
-        storage.set(PARENT, CHILD_ONE, 2)
+        self.store.add("A", "A1")
+        self.store.add("B", "B1")
+        self.store.add("C", "C1")
 
-        self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, EDIT)
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1", "A1"])
 
-        storage.delete(PARENT, CHILD_ONE)
+        self.store.add("A", "A2")
+        self.store.add("D", "D1")
 
-        self.assertEqual(storage.revision, 4)
-        self.assertEqual(storage.last_operation, DELETE)
+        self.assertIterEqual(self.store.iterate(), ["D1", "C1", "B1", "A2"])
 
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=2), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=3), 2)
+    def test_remove(self):
+        """
+        Test basic remove functionality.
+        """
+
+        self.store.add("A", "A1")
+        self.store.add("B", "B1")
+        self.store.add("C", "C1")
+
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1", "A1"])
+
+        self.store.remove("A")
+
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1"])
+
+        self.store.remove("C")
+
+        self.assertIterEqual(self.store.iterate(), ["B1"])
+
+    def test_get(self):
+        """
+        Test basic get functionality
+        """
+
+        self.store.add("A", "A1")
+        self.store.add("B", "B1")
+        self.store.add("C", "C1")
+
+        self.assertEqual(self.store.get("A"), "A1")
+        self.assertEqual(self.store.get("A", revision=1), "A1")
+
+        self.store.commit()
+        self.store.add("A", "A2")
+
+        self.assertEqual(self.store.get("A"), "A2")
+        self.assertEqual(self.store.get("A", revision=2), "A2")
+        self.assertEqual(self.store.get("A", revision=1), "A1")
+
+        self.store.commit()
+        self.store.remove("A")
 
         with self.assertRaises(KeyError):
-            storage.get(PARENT, CHILD_ONE, revision=4)
+            self.store.get("A")
 
-    def test_delete_missing(self):
+        self.assertEqual(self.store.get("A", revision=2), "A2")
+        self.assertEqual(self.store.get("A", revision=1), "A1")
+
+    def test_get_fail(self):
         """
-        Test if deletion of non-existening items fail.
+        Test edge cases for get functionality.
         """
 
-        storage = TreeRevisionStorage()
+        self.store.add("A", "A1")
+        self.store.remove("A")
 
         with self.assertRaises(KeyError):
-            storage.delete(PARENT)
-
-        with self.assertRaises(KeyError):
-            storage.delete(PARENT, CHILD)
-
-    def test_delete_double(self):
-        """
-        Test set-delete-delete on the same item.
-        """
-
-        storage = TreeRevisionStorage()
-
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.delete(PARENT, CHILD_ONE)
-
-        with self.assertRaises(KeyError):
-            storage.delete(PARENT, CHILD_ONE)
-
-        storage.delete(PARENT)
-
-    def test_delete_double_parent(self):
-        """
-        Test set-delete-delete on same parent.
-        """
-
-        storage = TreeRevisionStorage()
-
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.delete(PARENT)
-
-        with self.assertRaises(KeyError):
-            storage.delete(PARENT)
-
-        with self.assertRaises(KeyError):
-            storage.delete(PARENT, CHILD_ONE)
-
-    def test_clear(self):
-        """
-        Test clearing of storage.
-        """
-
-        storage = TreeRevisionStorage()
-
-        self.assertEqual(storage.revision, 1)
-
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.set(PARENT, CHILD_TWO, 2)
-        storage.set(PARENT, CHILD_THREE, 3)
-
-        self.assertEqual(storage.revision, 2)
-        self.assertEqual(storage.last_operation, ADD)
-
-        storage.clear(PARENT)
-
-        self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(storage.get(PARENT), set([]))
-
-        storage.clear(PARENT)
-
-        self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(storage.get(PARENT), set([]))
-
-        self.assertEqual(
-            storage.get(PARENT, revision=2),
-            set([CHILD_ONE, CHILD_TWO, CHILD_THREE]))
-        self.assertEqual(storage.get(PARENT, revision=3), set([]))
-
-    def test_clear_deleted(self):
-        """
-        Test clearing of parent and existence of items.
-        """
-
-        storage = TreeRevisionStorage()
-
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.set(PARENT, CHILD_TWO, 2)
-        storage.set(PARENT, CHILD_THREE, 3)
-
-        storage.delete(PARENT)
-
-        with self.assertRaises(KeyError):
-            storage.clear(PARENT)
-
-    def test_get_aligned(self):
-        """
-        Test for aligning revisions.
-        """
-
-        storage = TreeRevisionStorage()
-
-        self.assertEqual(storage.revision, 1)
-
-        storage.set(PARENT, CHILD_ONE, 1)
-
-        self.assertEqual(storage.revision, 2)
-        self.assertEqual(storage.last_operation, ADD)
-
-        storage.set(DUMMY, DUMMY_ONE, "a")
-        storage.delete(DUMMY, DUMMY_ONE)
-        storage.set(DUMMY, DUMMY_TWO, "b")
-        storage.delete(DUMMY, DUMMY_TWO)
-        storage.set(DUMMY, DUMMY_THREE, "c")
-        storage.delete(DUMMY, DUMMY_THREE)
-
-        self.assertEqual(storage.revision, 7)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(storage.get(PARENT), set([CHILD_ONE]))
-
-        storage.set(PARENT, CHILD_ONE, 2)
-
-        self.assertEqual(storage.revision, 8)
-        self.assertEqual(storage.last_operation, EDIT)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE), 2)
-
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=2), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=3), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=4), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=5), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=6), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=7), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=8), 2)
-
-        storage.set(DUMMY, DUMMY_ONE, "a")
-        storage.delete(DUMMY, DUMMY_ONE)
-        storage.set(DUMMY, DUMMY_TWO, "b")
-        storage.delete(DUMMY, DUMMY_TWO)
-        storage.set(DUMMY, DUMMY_THREE, "c")
-        storage.delete(DUMMY, DUMMY_THREE)
-
-        self.assertEqual(storage.revision, 14)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE), 2)
-
-        storage.delete(PARENT, CHILD_ONE)
-
-        self.assertEqual(storage.revision, 14)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(storage.get(PARENT), set([]))
-
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=8), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=9), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=10), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=11), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=12), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=13), 2)
-        self.assertEqual(storage.get(PARENT, revision=14), set([]))
-
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=7), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=8), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=9), 2)
-
-        with self.assertRaises(KeyError):
-            storage.get(PARENT, CHILD_ONE, revision=14)
-
-    def test_get_miss(self):
-        """
-        Test for missing items and parents.
-        """
-
-        storage = TreeRevisionStorage()
-
-        with self.assertRaises(KeyError):
-            storage.get(PARENT)
-
-        with self.assertRaises(KeyError):
-            storage.get(PARENT, CHILD)
-
-    def test_basic(self):
-        """
-        Test basic functionality.
-        """
-
-        storage = TreeRevisionStorage()
-
-        self.assertEqual(storage.revision, 1)
-        self.assertEqual(storage.last_operation, EMPTY)
-
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.set(PARENT, CHILD_TWO, 2)
-        storage.set(PARENT, CHILD_THREE, 3)
-
-        self.assertEqual(storage.revision, 2)
-        self.assertEqual(storage.last_operation, ADD)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_TWO), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_THREE), 3)
-        self.assertEqual(
-            storage.get(PARENT),
-            set([CHILD_ONE, CHILD_TWO, CHILD_THREE]))
-
-        storage.delete(PARENT, CHILD_ONE)
-
-        self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(storage.get(PARENT), set([CHILD_TWO, CHILD_THREE]))
-
-        storage.delete(PARENT)
-
-        self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(
-            storage.get(PARENT, revision=2),
-            set([CHILD_ONE, CHILD_TWO, CHILD_THREE]))
-
-        with self.assertRaises(KeyError):
-            storage.get(PARENT)
-
-        with self.assertRaises(KeyError):
-            storage.get(PARENT, revision=3)
-
-        with self.assertRaises(KeyError):
-            storage.get(PARENT, revision=4)
-
-    def test_duplicate_keys(self):
-        """
-        Test for duplicate keys.
-        """
-
-        storage = TreeRevisionStorage()
-
-        storage.set(PARENT_ONE, CHILD_ONE, "1")
-        storage.set(PARENT_TWO, CHILD_ONE, 1)
-
-        self.assertNotEqual(
-            storage.get(PARENT_ONE, CHILD_ONE),
-            storage.get(PARENT_TWO, CHILD_ONE))
-
-    def test_clean(self):
-        """
-        Test cleaning.
-        """
-
-        storage = TreeRevisionStorage()
-
-        self.assertEqual(storage.revision, 1)
-
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.set(PARENT, CHILD_ONE, 2)
-        storage.delete(PARENT, CHILD_ONE)
-
-        self.assertEqual(storage.revision, 4)
-        self.assertEqual(storage.last_operation, DELETE)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=2), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=3), 2)
-        with self.assertRaisesRegexp(KeyError, "Item marked .*"):
-            storage.get(PARENT, CHILD_ONE, revision=4)
-
-        # A clean commits
-        storage.clean(up_to_revision=2)
-
-        self.assertEqual(storage.revision, 5)
-        self.assertEqual(storage.last_operation, NOOP)
-
-        with self.assertRaisesRegexp(KeyError, "Requested revision .*"):
-            storage.get(PARENT, revision=1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=3), 2)
-        with self.assertRaisesRegexp(KeyError, "Item marked .*"):
-            storage.get(PARENT, CHILD_ONE, revision=4)
-
-        # A clean() commits, but nothing has changed.
-        storage.clean()
-
-        self.assertEqual(storage.revision, 5)
-        self.assertEqual(storage.last_operation, NOOP)
-
-        with self.assertRaisesRegexp(KeyError, "No item stored .*"):
-            storage.get(PARENT, CHILD_ONE, revision=5)
-        self.assertEqual(storage.get(PARENT, revision=4), set([]))
+            self.store.get("A", revision=1)
 
     def test_commit(self):
         """
-        Test committing.
+        Test commit and revision functionality.
         """
 
-        storage = TreeRevisionStorage()
+        self.store.add("A", "A1")
+        self.store.add("B", "B1")
+        self.store.add("C", "C1")
 
-        self.assertEqual(storage.revision, 1)
+        self.assertEqual(self.store.revision, 1)
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1", "A1"])
+        self.assertIterEqual(
+            self.store.iterate(revision=1), ["C1", "B1", "A1"])
 
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.set(PARENT, CHILD_ONE, 2)
-        storage.set(PARENT, CHILD_ONE, 3)
+        self.store.commit()
+        self.store.add("A", "A2")
+        self.store.add("D", "D1")
 
-        self.assertEqual(storage.revision, 3)
-        self.assertEqual(storage.last_operation, EDIT)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=2), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=3), 3)
+        self.assertEqual(self.store.revision, 2)
+        self.assertIterEqual(self.store.iterate(), ["D1", "C1", "B1", "A2"])
+        self.assertIterEqual(
+            self.store.iterate(revision=2), ["D1", "C1", "B1", "A2"])
+        self.assertIterEqual(
+            self.store.iterate(revision=1), ["C1", "B1", "A1"])
 
-        storage = TreeRevisionStorage()
+        self.store.commit()
+        self.store.remove("A")
+        self.store.remove("C")
 
-        storage.set(PARENT, CHILD_ONE, 1)
-        storage.commit()
-        storage.set(PARENT, CHILD_ONE, 2)
-        storage.commit()
-        storage.set(PARENT, CHILD_ONE, 3)
+        self.assertEqual(self.store.revision, 3)
+        self.assertIterEqual(self.store.iterate(), ["D1", "B1"])
+        self.assertIterEqual(self.store.iterate(revision=3), ["D1", "B1"])
+        self.assertIterEqual(
+            self.store.iterate(revision=2), ["D1", "C1", "B1", "A2"])
+        self.assertIterEqual(
+            self.store.iterate(revision=1), ["C1", "B1", "A1"])
 
-        self.assertEqual(storage.revision, 6)
-        self.assertEqual(storage.last_operation, EDIT)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=2), 1)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=4), 2)
-        self.assertEqual(storage.get(PARENT, CHILD_ONE, revision=6), 3)
+    def test_iterate(self):
+        """
+        """
 
-        storage = TreeRevisionStorage()
+        self.store.add("A", "A1")
+        self.store.add("B", "B1")
+        self.store.add("C", "C1")
+
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1", "A1"])
+        self.assertIterEqual(
+            self.store.iterate(revision=1), ["C1", "B1", "A1"])
+        self.assertIterEqual(
+            self.store.iterate(revision=-1), ["C1", "B1", "A1"])
+
+        with self.assertRaises(ValueError):
+            for _ in self.store.iterate(revision=2):
+                pass
+
+    def test_clean(self):
+        """
+        """
+
+        self.store.add("A", "A1")
+        self.store.add("B", "B1")
+        self.store.add("C", "C1")
+
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1", "A1"])
+
+        self.store.commit()
+        self.store.remove("A")
+
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1"])
+        self.assertIterEqual(self.store.iterate(revision=2), ["C1", "B1"])
+        self.assertIterEqual(
+            self.store.iterate(revision=1), ["C1", "B1", "A1"])
+
+        self.store.commit()
+        self.store.remove("C")
+
+        self.assertIterEqual(self.store.iterate(), ["B1"])
+        self.assertIterEqual(self.store.iterate(revision=3), ["B1"])
+        self.assertIterEqual(self.store.iterate(revision=2), ["C1", "B1"])
+        self.assertIterEqual(
+            self.store.iterate(revision=1), ["C1", "B1", "A1"])
+
+        self.store.clean(revision=2)
+
+        self.assertIterEqual(self.store.iterate(), ["B1"])
+        self.assertIterEqual(self.store.iterate(revision=3), ["B1"])
+        self.assertIterEqual(self.store.iterate(revision=2), ["C1", "B1"])
+
+        with self.assertRaises(ValueError):
+            for _ in self.store.iterate(revision=1):
+                pass
+
+        self.store.clean()
+
+        self.assertIterEqual(self.store.iterate(), ["B1"])
+        self.assertIterEqual(self.store.iterate(revision=3), ["B1"])
+
+        with self.assertRaises(ValueError):
+            for _ in self.store.iterate(revision=2):
+                pass
+
+    def test_diff(self):
+        """
+        Test diff functionality (1).
+        """
+
+        self.store.commit()
+        self.store.add("A", "A2")
+        self.store.commit()
+        self.store.remove("A")
+
+        self.assertIterEqual(self.store.diff(3, 1), [("A", 1)])
+        self.assertIterEqual(self.store.diff(1, 3), [("A", -1)])
+
+        self.assertIterEqual(self.store.diff(2, 1), [("A", 1)])
+        self.assertIterEqual(self.store.diff(1, 2), [("A", -1)])
+
+        self.assertIterEqual(self.store.diff(3, 2), [("A", -1)])
+        self.assertIterEqual(self.store.diff(2, 3), [("A", 1)])
+
+    def test_diff2(self):
+        """
+        Test diff functionality (2).
+        """
+
+        self.store.commit()
+        self.store.add("A", "A2")
+        self.store.commit()
+        self.store.remove("A")
+        self.store.commit()
+        self.store.add("B", "B4")
+        self.store.commit()
+        self.store.add("C", "C5")
+        self.store.commit()
+        self.store.remove("B")
+
+        self.assertIterEqual(self.store.diff(6, 5), [("B", -1)])
+        self.assertIterEqual(self.store.diff(5, 6), [("B", 1)])
+
+    def test_diff3(self):
+        """
+        Test diff functionality (3).
+        """
+
+        self.store.commit()
+        self.store.add("A", "A2")
+        self.store.commit()
+        self.store.add("B", "B3")
+        self.store.commit()
+        self.store.add("C", "C4")
+
+        self.assertIterEqual(self.store.diff(4, 3), [("C", 1)])
+        self.assertIterEqual(self.store.diff(3, 4), [("C", -1)])
+
+    def test_diff4(self):
+        """
+        Test diff functionality (4).
+        """
+
+        self.store.commit()
+        self.store.add("A", "A2.1")
+        self.store.add("A", "A2.2")
+        self.store.commit()
+        self.store.remove("A")
+        self.store.commit()
+        self.store.add("A", "A4")
+        self.store.commit()
+        self.store.remove("A")
+        self.store.commit()
+        self.store.add("A", "A6")
+        self.store.commit()
+        self.store.commit()
+        self.store.add("A", "A8")
+
+        self.assertIterEqual(self.store.diff(8, 7), [("A", 0)])
+        self.assertIterEqual(self.store.diff(8, 6), [("A", 0)])
+        self.assertIterEqual(self.store.diff(8, 5), [("A", 1)])
+        self.assertIterEqual(self.store.diff(8, 4), [("A", 0)])
+        self.assertIterEqual(self.store.diff(8, 3), [("A", 1)])
+        self.assertIterEqual(self.store.diff(8, 2), [("A", 0)])
+        self.assertIterEqual(self.store.diff(8, 1), [("A", 1)])
+
+        self.assertIterEqual(self.store.diff(7, 8), [("A", 0)])
+        self.assertIterEqual(self.store.diff(6, 8), [("A", 0)])
+        self.assertIterEqual(self.store.diff(5, 8), [("A", -1)])
+        self.assertIterEqual(self.store.diff(4, 8), [("A", 0)])
+        self.assertIterEqual(self.store.diff(3, 8), [("A", -1)])
+        self.assertIterEqual(self.store.diff(2, 8), [("A", 0)])
+        self.assertIterEqual(self.store.diff(1, 8), [("A", -1)])
+
+        self.assertIterEqual(self.store.diff(5, 2), [("A", -1)])
+        self.assertIterEqual(self.store.diff(2, 5), [("A", 1)])
+
+        self.assertIterEqual(self.store.diff(8, 8), [("A", 1)])
+        self.assertIterEqual(self.store.diff(5, 5), [])
+        self.assertIterEqual(self.store.diff(4, 4), [("A", 1)])
+        self.assertIterEqual(self.store.diff(3, 3), [])
+        self.assertIterEqual(self.store.diff(1, 1), [])
+
+    def test_iter(self):
+        """
+        """
+
+        self.store.add("A", "A1")
+        self.store.add("B", "B1")
+        self.store.add("C", "C1")
+
+        self.assertIterEqual(self.store.iterate(), ["C1", "B1", "A1"])
+        self.assertIterEqual(iter(self.store), ["C1", "B1", "A1"])
+
+        self.store.commit()
+        self.store.add("A", "A2")
+        self.store.add("D", "D1")
+
+        self.assertIterEqual(self.store.iterate(), ["D1", "C1", "B1", "A2"])
+        self.assertIterEqual(iter(self.store), ["D1", "C1", "B1", "A2"])
+
+    def test_nonzero(self):
+        """
+        Test coercion to boolean.
+        """
+
+        self.assertFalse(self.store)
+
+        self.store.add("A", "A1")
+
+        self.assertTrue(self.store)
+
+        self.store.add("A", "A2")
+
+        self.assertTrue(self.store)
+
+        self.store.remove("A")
+
+        self.assertFalse(self.store)
