@@ -50,15 +50,48 @@ IDs (e.g. ``parent.child_id`` versus ``parent.child``).
 Installation
 ------------
 
-Make sure Cython is installed. While not required, it can boost
-performance of some modules significantly.
+Make sure Cython is installed. It is required to boost performance of
+some modules significantly.
 
 To install, simply run ``pip install flask-daapser``. It should install
-all dependencies. If you want the latest version, type
+all dependencies and compile the Cython-based modules. If you want the
+latest version, type
 ``pip install git+https://github.com/basilfx/flask-daapserver``.
 
 PyPy 2.4 or later is supported. While all tests pass and examples work,
 it should be considered experimental.
+
+Upgrade notice
+~~~~~~~~~~~~~~
+
+The revisioning storage API has changed between version v2.3.0 and
+v3.0.0. Due to the large overhead of revisioning, it was decided that
+there should be less memory usage and faster access. While the API has
+remained similar, a few changes have been made:
+
+-  Cython is required now.
+-  The global object store has been removed. Every container now has its
+   own store for its children. Therefore, it is very important to add
+   objects in the right order. For instance, do not add a item to a
+   database before adding the database to the server (the models do not
+   offer advanced ORM functionality).
+-  The previous version fixed compatibility with iTunes 12.1. For some
+   reason, iTunes expected the first revision to be two. The fix simply
+   included to start revisions from 2. This version removed this
+   'workaround', and now expects the first revision to be commited
+   first, e.g. setting up the initial structure first. See the examples
+   for more information.
+-  Auto-commit has been removed. The user should commit manually. The
+   ``daapserver.models.BaseServer`` has a ``commit`` method that will
+   propagate the commit to all attached databases, containers and so
+   forth.
+-  The ``added()`` and ``edited()`` methods on
+   ``daapserver.models.Collection`` have been replaced by ``updated()``.
+   The DAAP protocol does not differ between both.
+
+To give an idea of the performance impact, the ``Benchmark.py`` script
+yielded an improvement of 108MB vs 196MB in memory usage and 0.8375s vs
+4.3017s in time (100,000 items, Python 2.7.9, OS X 10.10, 64 Bits).
 
 Experimental
 ~~~~~~~~~~~~
@@ -71,8 +104,7 @@ following functions:
    Saves two dictionary lookups and simplifies instantiation. However,
    it bypasses (type) checking.
 
-In combination with Cython (run before Cythonizing), more speeds
-improvements can be realized. To run this script, run
+To run this script, run
 ``python utils/transform.py <input_file> <output_file>``, e.g.
 ``python utils/transform.py daapserver/response.py daapserver/response_out.py``.
 

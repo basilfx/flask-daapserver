@@ -1,5 +1,15 @@
 # Changelog
 
+## v3.0.0
+Released XX June 2015
+
+Highlights:
+* Added: new data storage backend with simplified revisioning store (less memory)
+* Changed: Cython is not optional anymore
+* Improved: updated examples
+
+The full list of commits can be found [here](https://github.com/basilfx/flask-daapserver/compare/v2.3.0...v3.0.0).
+
 ## v2.3.0
 Released 05 April 2015
 
