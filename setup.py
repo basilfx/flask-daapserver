@@ -6,10 +6,10 @@ import sys
 try:
     from Cython.Build import cythonize
 except ImportError:
-    cythonize = lambda x: None
     sys.stderr.write(
-        "Warning: Cython not installed. Slower Python-only alternatives will "
-        "be used instead.\n")
+        "Error: Cython is not installed. Please install Cython first with"
+        "`pip install Cython`.")
+    sys.exit(1)
 
 # Detect PyPy and fix dependencies
 try:
@@ -19,11 +19,10 @@ try:
 except ImportError:
     dependency_links = []
 
-
 # Setup definitions
 setup(
     name="flask-daapserver",
-    version="2.3.0",
+    version="3.0.0",
     description="DAAP server framework implemented with Flask",
     long_description=open("README.rst").read(),
     author="Bas Stottelaar",
@@ -36,14 +35,14 @@ setup(
     platforms=["any"],
     license="MIT",
     url="https://github.com/basilfx/flask-daapserver",
-    keywords="daap flask daapserver itunes home sharing",
+    keywords="daap flask daapserver itunes home sharing streaming",
     zip_safe=False,
     ext_modules=cythonize([
-        "daapserver/daap.py",
-        "daapserver/daap_data.py",
+        "daapserver/collection.pyx",
+        "daapserver/daap.pyx",
+        "daapserver/models.pyx",
         "daapserver/responses.py",
-        "daapserver/revision.py",
-        "daapserver/models.py",
+        "daapserver/revision.pyx",
     ]),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
