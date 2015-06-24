@@ -1,11 +1,17 @@
-from daapserver cimport constants
+cdef class RevisionStore(object):
+    cdef Entry next
+    cdef dict lookup
+    cdef readonly int revision
+    cdef int min_revision
 
-cimport cython
+    cdef _add(self, object key, Entry value, Entry elder=?)
 
-cdef class TreeRevisionStorage(object):
-    cpdef public int revision
-    cdef public int last_operation
-    cdef object storage
+    cdef _check_revision(self, int revision)
 
-    @cython.locals(low=cython.int, middle=cython.int, high=cython.int)
-    cdef get_index(self, object key, int revision)
+
+cdef class Entry(object):
+    cdef object value
+    cdef int revision
+    cdef bint removed
+
+    cdef Entry previous, next, elder

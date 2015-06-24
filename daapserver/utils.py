@@ -7,8 +7,8 @@ def diff(new, old):
     """
     Compute the difference in items of two revisioned collections. If only
     `new' is specified, it is assumed it is not an update. If both are set,
-    the removed items are returned first. Otherwise, the added and edited ones
-    are returned.
+    the removed items are returned first. Otherwise, the updated and edited
+    ones are returned.
 
     :param set new: Set of new objects
     :param set old: Set of old objects
@@ -16,21 +16,21 @@ def diff(new, old):
     :rtype: tuple
     """
 
-    added = set()
+    updated = set()
     removed = set()
 
     # Take either added or removed, but not both
-    if new and old:
+    if new is not None and old is not None:
         is_update = True
-        removed = new.removed(old)
+        removed = set(new.removed(old))
 
         if not removed:
-            added = new.added(old) | new.edited(old)
+            updated = set(new.updated(old))
     else:
         is_update = False
-        added = new
+        updated = new
 
-    return added, removed, is_update
+    return updated, removed, is_update
 
 
 def generate_persistent_id():
@@ -77,7 +77,7 @@ def to_tree(instance, *children):
     Generate tree structure of an instance, and its children. Each child item
     should be a (name, child) tuple, where name will cover all the children.
 
-    This method yields it results instead of returning them.
+    This method yields its results, instead of returning them.
     """
 
     # Yield representation of self

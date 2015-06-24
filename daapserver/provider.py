@@ -159,7 +159,7 @@ class Provider(object):
             # Wait for next revision
             next_revision = self.wait_for_update()
         else:
-            next_revision = self.server.storage.revision
+            next_revision = self.server.revision
 
         return next_revision
 
@@ -173,9 +173,9 @@ class Provider(object):
             session.revision for session in self.sessions.itervalues())
 
         # Remove all old revision history
-        if lowest_revision == self.server.storage.revision:
+        if lowest_revision == self.server.revision:
             with self.lock:
-                self.server.storage.clean(lowest_revision)
+                self.server.clean(lowest_revision)
 
     def wait_for_update(self):
         """
@@ -186,7 +186,7 @@ class Provider(object):
         :rtype: int
         """
 
-        raise NotImplemented("Needs to be overridden")
+        raise NotImplementedError("Needs to be overridden.")
 
     def get_databases(self, session_id, revision, delta):
         """
@@ -328,7 +328,7 @@ class Provider(object):
         :return: File descriptor, iterator or raw bytes.
         """
 
-        raise NotImplemented("Needs to be overridden")
+        raise NotImplementedError("Needs to be overridden.")
 
     def get_artwork_data(self, session, item):
         """
@@ -344,7 +344,7 @@ class Provider(object):
         :return: File descriptor, iterator or raw bytes.
         """
 
-        raise NotImplemented("Needs to be overridden")
+        raise NotImplementedError("Needs to be overridden.")
 
 
 class LocalFileProvider(Provider):

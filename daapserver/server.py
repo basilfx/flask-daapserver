@@ -306,7 +306,7 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
         will be ever implemented.
         """
 
-        raise NotImplemented
+        raise NotImplementedError("Fairplay not supported.")
 
     @app.route("/databases", methods=["GET"])
     @daap_trace
@@ -356,7 +356,7 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
                                delta):
         """
         """
-        raise NotImplemented("Not implemented")
+        raise NotImplemented("Groups not supported.")
 
     @app.route(
         "/databases/<int:database_id>/items/<int:item_id>.<suffix>",
@@ -436,7 +436,7 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
     def database_groups(database_id, session_id, revision, delta, type):
         """
         """
-        raise NotImplemented
+        raise NotImplementedError("Groups not supported.")
 
     @app.route(
         "/databases/<int:database_id>/containers/<int:container_id>/items",

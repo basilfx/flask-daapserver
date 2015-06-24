@@ -19,14 +19,12 @@ import struct
 __all__ = ["DAAPObject", "SpeedyDAAPObject"]
 
 
-class DAAPObject(object):
+cdef class DAAPObject(object):
     """
     Represent a DAAP data object.
     """
 
-    __slots__ = ("code", "value", "itype")
-
-    def __init__(self, code=None, value=None):
+    def __cinit__(self, code=None, value=None):
         if code:
             try:
                 self.code = dmapNames[code]
@@ -36,7 +34,7 @@ class DAAPObject(object):
             self.itype = dmapCodeTypes[self.code][1]
             self.value = value
 
-    def to_tree(self, level=0):
+    def to_tree(self, int level=0):
         yield "\t" * level + "%s (%s)\t%s\t%s\n" % (
             dmapCodeTypes[self.code][0], self.code,
             dmapReverseDataTypes[self.itype], self.value)
@@ -46,6 +44,9 @@ class DAAPObject(object):
                 yield obj.to_tree(level + 1)
 
     def encode(self):
+        cdef int length
+        cdef str packing
+
         # Generate DMAP tagged data format. Find out what type of object
         # this is.
         if self.itype == 12:
@@ -127,6 +128,8 @@ class DAAPObject(object):
                         self.code, dmapCodeTypes[self.code][0], e))
 
     def decode(self, stream):
+        cdef int length
+
         # Read 4 bytes for the code and 4 bytes for the length of the
         # objects data.
         data = stream.read(8)
@@ -191,15 +194,13 @@ class DAAPObject(object):
             self.value = value
 
 
-class SpeedyDAAPObject(DAAPObject):
+cdef class SpeedyDAAPObject(DAAPObject):
     """
     Extension of DAAPObject that directly sets the values. This does not check
     the values.
     """
 
-    __slots__ = DAAPObject.__slots__
-
-    def __init__(self, code, itype, value):
+    def __cinit__(self, code, itype, value):
         self.code = code
         self.itype = itype
         self.value = value
