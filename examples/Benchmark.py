@@ -29,7 +29,7 @@ class BenchmarkProvider(provider.Provider):
 
         # It's important that `self.server' is initialized, since it is used
         # throughout the class.
-        self.server = server = Server(id=1)
+        self.server = server = Server(name="Benchmark Server")
 
         # Add example data to the library. Note that everything should be added
         # in the right order. For instance, you cannot add an item to a
@@ -47,7 +47,7 @@ class BenchmarkProvider(provider.Provider):
         database.containers.add(container_three)
 
         # Server initial commit
-        server.storage.commit()
+        server.commit()
 
     def benchmark(self, count):
         # Save references
@@ -80,10 +80,10 @@ class BenchmarkProvider(provider.Provider):
         database.containers.add(container_two)
         database.containers.add(container_three)
 
-        server.databases.add(server)
+        server.databases.add(database)
 
         # Clean old revision history
-        server.storage.clean()
+        server.clean(server.revision)
 
         # Iterate over items
         x = database.items.values()
@@ -112,7 +112,7 @@ def measure(test, disable_gc):
 
     # Measure memory, if psutil is installed and loaded.
     if psutil:
-        memory = psutil.Process().get_memory_info()[0] / 1024 / 1024
+        memory = psutil.Process().memory_info()[0] / 1024 / 1024
     else:
         memory = 0.0
 

@@ -23,7 +23,7 @@ class RevisionProvider(provider.Provider):
 
         # It's important that `self.server' is initialized, since it is used
         # throughout the class.
-        self.server = server = Server(id=1, name="DAAPServer")
+        self.server = server = Server(name="DAAPServer")
         self.lock = gevent.lock.Semaphore()
         self.ready = gevent.event.Event()
 
@@ -36,8 +36,8 @@ class RevisionProvider(provider.Provider):
         container_one = Container(id=1, name="My Music", is_base=True)
         database.containers.add(container_one)
 
-        # Server init ready
-        server.storage.commit()
+        # Commit initial revision
+        server.commit()
 
         # Spawn task do random things
         gevent.spawn(self.do_random_things)
@@ -49,20 +49,23 @@ class RevisionProvider(provider.Provider):
         while True:
             with self.lock:
                 # Decide what to do
-                if random.choice(["add", "add", "del"]) == "add":
+                choice = random.choice(["add", "add", "remove"])
+
+                if choice == "add":
                     item = Item(
                         id=counter, artist="SubDaap", album="RevisionServer",
                         name="Item %d" % counter, duration=counter)
                     container_item = ContainerItem(id=counter, item_id=item.id)
                     counter += 1
 
-                    # Add
                     database.items.add(item)
                     database.containers[1].container_items.add(container_item)
                     logger.info(
-                        "Added item %d. %d items in container." % (
-                            item.id, len(database.items)))
-                else:
+                        "Item %d added, %d items in container. Revision is "
+                        "%d." % (
+                            item.id, len(database.items),
+                            self.server.revision))
+                elif choice == "remove":
                     if len(database.items) == 0:
                         continue
 
@@ -70,37 +73,48 @@ class RevisionProvider(provider.Provider):
                     container_item = database.containers[1] \
                                              .container_items[item.id]
 
-                    # Remove
                     database.containers[1] \
-                            .container_items.remove(container_item)
+                            .container_items \
+                            .remove(container_item)
                     database.items.remove(item)
                     logger.info(
-                        "Removed item %d. %d in items container left." % (
-                            item.id, len(database.items)))
+                        "Item %d removed, %d items in container. Revision is "
+                        "%d." % (
+                            item.id, len(database.items),
+                            self.server.revision))
 
                 # Re-add the database, so it is marked as edited.
                 database.containers.add(database.containers[1])
                 self.server.databases.add(database)
 
-            # Unblock waiting clients
-            self.server.storage.commit()
+            # Commit the changes.
+            self.server.commit()
+
+            # Verify the change by computing the difference.
+            if choice == "add":
+                assert list(database.items(self.server.revision).updated(
+                    database.items(self.server.revision - 1))) == [item.id]
+            elif choice == "remove":
+                assert list(database.items(self.server.revision).removed(
+                    database.items(self.server.revision - 1))) == [item.id]
+
+            # Unblock waiting clients. This will update the clients.
             self.ready.set()
             self.ready.clear()
 
             # Wait until next operation
-            gevent.sleep(3.0)
+            gevent.sleep(5.0)
 
     def wait_for_update(self):
-        # In a real server, this should block until an update, and return the
-        # next revision number.
+        # Wait for the next revision update
         self.ready.wait()
 
         # Return the revision number
-        return self.server.storage.revision
+        return self.server.revision
 
     def get_item_data(self, *args, **kwargs):
         # Normally, you would provide a file pointer or raw bytes here.
-        raise NotImplemented("Not supported for this example")
+        raise NotImplementedError("Not supported in this example.")
 
 
 def main():

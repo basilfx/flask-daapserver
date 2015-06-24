@@ -38,7 +38,7 @@ class SoundcloudProvider(provider.LocalFileProvider):
 
         # It's important that `self.server' is initialized, since it is used
         # throughout the class.
-        self.server = server = Server(id=1, name="DAAPServer")
+        self.server = server = Server(name="DAAPServer")
 
         # Add example data to the library. Note that everything should be added
         # in the right order. For instance, you cannot add an item to a
@@ -48,6 +48,9 @@ class SoundcloudProvider(provider.LocalFileProvider):
 
         container = Container(id=1, name="My Music", is_base=True)
         database.containers.add(container)
+
+        # Commit initial revision
+        server.commit()
 
         # Prepare Soundcloud connection.
         self.temp_directory = tempfile.mkdtemp()
@@ -76,11 +79,10 @@ class SoundcloudProvider(provider.LocalFileProvider):
                 database.items.add(item)
                 container.container_items.add(container_item)
 
-            logger.info(
-                "Found %d tracks for user '%s'", len(tracks), username)
+            logger.info("Found %d tracks for user '%s'", len(tracks), username)
 
-        # Commit changes, so next updates will start new revision.
-        server.storage.commit()
+        # Commit this revision
+        server.commit()
 
     def wait_for_update(self):
         # In a real server, this should block until an update and return the
@@ -135,8 +137,7 @@ def download_file(url, file_name):
                 fp.write(block)
                 file_size += len(block)
 
-        logger.info(
-            "Download finished, size is %d bytes.", file_size)
+        logger.info("Download finished, size is %d bytes.", file_size)
 
     return file_size
 

@@ -20,7 +20,7 @@ class ExampleProvider(provider.Provider):
 
         # It's important that `self.server' is initialized, since it is used
         # throughout the class.
-        self.server = server = Server(id=1, name="DAAPServer")
+        self.server = server = Server(name="DAAPServer")
 
         # Add example data to the library. Note that everything should be added
         # in the right order. For instance, you cannot add an item to a
@@ -65,8 +65,8 @@ class ExampleProvider(provider.Provider):
         container_two.container_items.add(container_item_two_b)
         container_two.container_items.add(container_item_two_c)
 
-        # Commit changes, so next updates will start new revision
-        server.storage.commit()
+        # Commit this revision
+        server.commit()
 
     def wait_for_update(self):
         # In a real server, this should block until an update and return the
@@ -76,7 +76,7 @@ class ExampleProvider(provider.Provider):
 
     def get_item_data(self, *args, **kwargs):
         # Normally, you would provide a file pointer or raw bytes here.
-        raise NotImplemented("Not supported for this example")
+        raise NotImplementedError("Not supported for this example.")
 
 
 def main():
