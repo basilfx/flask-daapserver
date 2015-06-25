@@ -38,7 +38,6 @@ setup(
     keywords="daap flask daapserver itunes home sharing streaming",
     zip_safe=False,
     ext_modules=cythonize([
-        "daapserver/collection.pyx",
         "daapserver/daap.pyx",
         "daapserver/models.pyx",
         "daapserver/responses.py",
