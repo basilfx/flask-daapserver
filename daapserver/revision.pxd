@@ -2,7 +2,7 @@ cdef class RevisionStore(object):
     cdef Entry next
     cdef dict lookup
     cdef readonly int revision
-    cdef int min_revision
+    cdef readonly int min_revision
 
     cdef _add(self, object key, Entry value, Entry elder=?)
 
