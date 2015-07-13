@@ -16,19 +16,16 @@ def diff(new, old):
     :rtype: tuple
     """
 
-    updated = set()
-    removed = set()
-
-    # Take either added or removed, but not both
-    if new is not None and old is not None:
+    if old is not None:
         is_update = True
-        removed = set(new.removed(old))
 
-        if not removed:
-            updated = set(new.updated(old))
+        removed = set(new.removed(old))
+        updated = set(new.updated(old))
     else:
         is_update = False
+
         updated = new
+        removed = set()
 
     return updated, removed, is_update
 
