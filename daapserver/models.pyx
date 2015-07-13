@@ -41,7 +41,7 @@ cdef class Server(object):
 
         cdef Database database
 
-        self.databases.store.commit(revision)
+        self.databases.commit(revision)
 
         for database in self.databases.itervalues():
             database._commit(revision)
@@ -52,7 +52,7 @@ cdef class Server(object):
 
         cdef Database database
 
-        self.databases.store.clean(revision)
+        self.databases.clean(revision)
 
         for database in self.databases.itervalues():
             database._clean(revision)
@@ -64,28 +64,36 @@ cdef class Server(object):
         :return: Tree representation as a string
         :rtype str:
         """
-        return utils.to_tree(self, ("Databases", self.databases))
+        return utils.to_tree(self, self.databases)
 
 
 cdef class Database(object):
 
     __slots__ = ()
 
-    collection_class = Collection
+    items_collection_class = MutableCollection
+    containers_collection_class = MutableCollection
 
     def __cinit__(self):
-        self.items = self.collection_class(self, Item)
-        self.containers = self.collection_class(self, Container)
+        self.items = self.items_collection_class(self)
+        self.containers = self.containers_collection_class(self)
 
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
+    def __repr__(self):
+        """
+        """
+
+        return "%s(id=%d, name=%s)" % (
+            self.__class__.__name__, self.id, self.name)
+
     cdef _commit(self, int revision):
         cdef Container container
 
-        self.items.store.commit(revision)
-        self.containers.store.commit(revision)
+        self.items.commit(revision)
+        self.containers.commit(revision)
 
         for container in self.containers.itervalues():
             container._commit(revision)
@@ -93,8 +101,8 @@ cdef class Database(object):
     cdef _clean(self, int revision):
         cdef Container container
 
-        self.items.store.clean(revision)
-        self.containers.store.clean(revision)
+        self.items.clean(revision)
+        self.containers.clean(revision)
 
         for container in self.containers.itervalues():
             container._clean(revision)
@@ -106,8 +114,7 @@ cdef class Database(object):
         :return: Tree representation as a string
         :rtype str:
         """
-        return utils.to_tree(
-            self, ("Items", self.items), ("Containers", self.containers))
+        return utils.to_tree(self, self.items, self.containers)
 
 
 cdef class Item(object):
@@ -117,6 +124,13 @@ cdef class Item(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
+
+    def __repr__(self):
+        """
+        """
+
+        return "%s(id=%d, artist=%s, name=%s)" % (
+            self.__class__.__name__, self.id, self.artist, self.name)
 
     def to_tree(self):
         """
@@ -132,20 +146,27 @@ cdef class Container(object):
 
     __slots__ = ()
 
-    collection_class = Collection
+    container_items_collection_class = MutableCollection
 
     def __cinit__(self):
-        self.container_items = self.collection_class(self, ContainerItem)
+        self.container_items = self.container_items_collection_class(self)
 
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
+    def __repr__(self):
+        """
+        """
+
+        return "%s(id=%d, name=%s, is_base=%s)" % (
+            self.__class__.__name__, self.id, self.name, self.is_base)
+
     cdef _commit(self, int revision):
-        self.container_items.store.commit(revision)
+        self.container_items.commit(revision)
 
     cdef _clean(self, int revision):
-        self.container_items.store.clean(revision)
+        self.container_items.clean(revision)
 
     def to_tree(self):
         """
@@ -154,7 +175,7 @@ cdef class Container(object):
         :return: Tree representation as a string
         :rtype str:
         """
-        return utils.to_tree(self, ("Container Items", self.container_items))
+        return utils.to_tree(self, self.container_items)
 
 
 cdef class ContainerItem(object):
@@ -164,6 +185,13 @@ cdef class ContainerItem(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
+
+    def __repr__(self):
+        """
+        """
+
+        return "%s(id=%d, item_id=%d, order=%d)" % (
+            self.__class__.__name__, self.id, self.item_id, self.order)
 
     def to_tree(self):
         """

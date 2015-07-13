@@ -212,10 +212,10 @@ class Provider(object):
             old = None
         else:
             new = self.server \
-                      .databases(revision)[database_id] \
+                      .databases[database_id] \
                       .containers(revision)
             old = self.server \
-                      .databases(delta)[database_id] \
+                      .databases[database_id] \
                       .containers(delta)
 
         return new, old
@@ -233,12 +233,12 @@ class Provider(object):
             old = None
         else:
             new = self.server \
-                      .databases(revision)[database_id] \
-                      .containers(revision)[container_id] \
+                      .databases[database_id] \
+                      .containers[container_id] \
                       .container_items(revision)
             old = self.server \
-                      .databases(delta)[database_id] \
-                      .containers(delta)[container_id] \
+                      .databases[database_id] \
+                      .containers[container_id] \
                       .container_items(delta)
 
         return new, old
@@ -254,10 +254,10 @@ class Provider(object):
             old = None
         else:
             new = self.server \
-                      .databases(revision)[database_id] \
+                      .databases[database_id] \
                       .items(revision)
             old = self.server \
-                      .databases(delta)[database_id] \
+                      .databases[database_id] \
                       .items(delta)
 
         return new, old

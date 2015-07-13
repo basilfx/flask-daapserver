@@ -65,6 +65,22 @@ cdef class RevisionStore(object):
 
         return False
 
+    def __contains__(self, key):
+        """
+        Check whether a given key exists and is not marked as removed.
+        """
+
+        cdef Entry current = self.lookup.get(key)
+
+        return current != None and current.removed != True
+
+    def __repr__(self):
+        """
+        """
+
+        return "%s(min_revision=%d, revision=%d)" % (
+            self.__class__.__name__, self.min_revision, self.revision)
+
     def iterate(self, int revision=-1):
         """
         """
@@ -102,8 +118,8 @@ cdef class RevisionStore(object):
         else:
             if revision < self.revision:
                 raise ValueError(
-                    "Can only commit to a revision greater than %d." %
-                    self.revision)
+                    "Can only commit to a revision greater than %d (%d was "
+                    "given)." % (self.revision, revision))
 
             self.revision = revision
 
@@ -267,3 +283,10 @@ cdef class Entry(object):
         self.value = value
         self.revision = revision
         self.removed = removed
+
+    def __repr__(self):
+        """
+        """
+
+        return "%s(revision=%d, removed=%s, value=%s)" % (
+            self.__class__.__name__, self.revision, self.removed, self.value)

@@ -71,22 +71,19 @@ def parse_byte_range(byte_range, min_byte=0, max_byte=sys.maxint):
 
 def to_tree(instance, *children):
     """
-    Generate tree structure of an instance, and its children. Each child item
-    should be a (name, child) tuple, where name will cover all the children.
-
-    This method yields its results, instead of returning them.
+    Generate tree structure of an instance, and its children. This method
+    yields its results, instead of returning them.
     """
 
     # Yield representation of self
     yield repr(instance)
 
     # Iterate trough each instance child collection
-    for i, item in enumerate(children):
-        name, child = item
+    for i, child in enumerate(children):
         lines = 0
 
         yield "|"
-        yield "+---" + name
+        yield "+---" + repr(child)
 
         if i != len(children) - 1:
             a = "|"
