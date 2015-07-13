@@ -1,13 +1,4 @@
-from daapserver.revision cimport RevisionStore
-
-
-cdef class Collection(object):
-    cdef public object parent
-    cdef public object child_type
-
-    cdef public RevisionStore store
-    cdef public int revision
-
+from daapserver.collection cimport MutableCollection
 
 cdef class Server(object):
     cdef public int revision

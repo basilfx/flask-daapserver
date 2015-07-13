@@ -39,6 +39,7 @@ setup(
     zip_safe=False,
     ext_modules=cythonize([
         "daapserver/daap.pyx",
+        "daapserver/collection.pyx",
         "daapserver/models.pyx",
         "daapserver/responses.py",
         "daapserver/revision.pyx",
