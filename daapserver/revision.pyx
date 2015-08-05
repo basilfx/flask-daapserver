@@ -8,6 +8,7 @@ cdef class RevisionStore(object):
         self.lookup = dict()
         self.revision = 1
         self.min_revision = 1
+        self.operations = 0
 
     cdef _add(self, object key, Entry value, Entry elder=None):
         """
@@ -32,8 +33,11 @@ cdef class RevisionStore(object):
             if value.next is not None:
                 value.next.previous = value
 
-        # For fast random lookup
+        # For fast random lookup.
         self.lookup[key] = value
+
+        # Increment number of operations.
+        self.operations += 1
 
     cdef _check_revision(self, int revision):
         """

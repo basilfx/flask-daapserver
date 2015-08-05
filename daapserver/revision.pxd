@@ -3,6 +3,7 @@ cdef class RevisionStore(object):
     cdef dict lookup
     cdef readonly int revision
     cdef readonly int min_revision
+    cdef readonly int operations
 
     cdef _add(self, object key, Entry value, Entry elder=?)
 
