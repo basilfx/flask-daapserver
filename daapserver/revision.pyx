@@ -4,7 +4,7 @@ cdef class RevisionStore(object):
     """
     """
 
-    def __cinit__(self):
+    def __init__(self):
         self.lookup = dict()
         self.revision = 1
         self.min_revision = 1
@@ -276,7 +276,7 @@ cdef class Entry(object):
     """
     """
 
-    def __cinit__(self, object value, int revision, bint removed=False):
+    def __init__(self, object value, int revision, bint removed=False):
         """
         """
 

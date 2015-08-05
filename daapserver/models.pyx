@@ -7,10 +7,9 @@ cdef class Server(object):
 
     databases_collection_class = MutableCollection
 
-    def __cinit__(self):
+    def __init__(self, **kwargs):
         self.databases = self.databases_collection_class(self)
 
-    def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
@@ -74,11 +73,10 @@ cdef class Database(object):
     items_collection_class = MutableCollection
     containers_collection_class = MutableCollection
 
-    def __cinit__(self):
+    def __init__(self, **kwargs):
         self.items = self.items_collection_class(self)
         self.containers = self.containers_collection_class(self)
 
-    def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
@@ -148,10 +146,9 @@ cdef class Container(object):
 
     container_items_collection_class = MutableCollection
 
-    def __cinit__(self):
+    def __init__(self, **kwargs):
         self.container_items = self.container_items_collection_class(self)
 
-    def __init__(self, **kwargs):
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 

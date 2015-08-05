@@ -5,7 +5,7 @@ cdef class ImmutableCollection(object):
     # Class type for older versions.
     old_revision_class = ImmutableCollection
 
-    def __cinit__(self, object parent, RevisionStore store=None,
+    def __init__(self, object parent, RevisionStore store=None,
                   int revision=-1):
         self.parent = parent
         self.store = RevisionStore() if store is None else store
