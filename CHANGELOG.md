@@ -1,10 +1,11 @@
 # Changelog
 
 ## v3.0.0
-Released XX June 2015
+Released XX August 2015
 
 Highlights:
 * Added: new data storage backend with simplified revisioning store (less memory)
+* Added: copy methods for creating an immutable copy of a data structure.
 * Changed: Cython is not optional anymore
 * Improved: updated examples
 
