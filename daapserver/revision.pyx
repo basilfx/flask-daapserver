@@ -72,7 +72,7 @@ cdef class RevisionStore(object):
 
         cdef Entry current = self.lookup.get(key)
 
-        return current != None and current.removed != True
+        return current is not None and current.removed != True
 
     def __repr__(self):
         """
