@@ -56,6 +56,12 @@ cdef class ImmutableCollection(object):
         for item in self.store.iterate(revision=self.revision):
             yield item
 
+    def keys(self):
+        return list(self.iterkeys())
+
+    def values(self):
+        return list(self.itervalues())
+
     def updated(self, other):
         for key, status in self.store.diff(self.revision, other.revision):
             if status >= 0:
