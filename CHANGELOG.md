@@ -4,10 +4,11 @@
 Released XX August 2015
 
 Highlights:
-* Added: new data storage backend with simplified revisioning store (less memory)
-* Added: copy methods for creating an immutable copy of a data structure.
-* Changed: Cython is not optional anymore
-* Improved: updated examples
+* Added: new data storage backend with simplified revisioning store (less memory).
+* Added: implemented copy protocol to create copies of data.
+* Changed: Cython is now required.
+* Improved: performance of encoder and response generator.
+* Improved: updated examples.
 
 The full list of commits can be found [here](https://github.com/basilfx/flask-daapserver/compare/v2.3.0...v3.0.0).
 
@@ -15,14 +16,14 @@ The full list of commits can be found [here](https://github.com/basilfx/flask-da
 Released 05 April 2015
 
 Highlights:
-* Added: Soundcloud provider example with Album Art
-* Added: experimental pre-compiler for responses
-* Added: client information such as user agent, remote address and state
-* Fixed: iTunes 12.1 compatibility
-* Fixed: Zeroconf localhost advertising
-* Fixed: do not implicitly serve static files from Flask
-* Improved: DAAP responses
-* Improved: Zeroconf advertising includes Machine ID and Database ID
+* Added: Soundcloud provider example with Album Art.
+* Added: experimental pre-compiler for responses.
+* Added: client information such as user agent, remote address and state.
+* Fixed: iTunes 12.1 compatibility.
+* Fixed: Zeroconf localhost advertising.
+* Fixed: do not implicitly serve static files from Flask.
+* Improved: DAAP responses.
+* Improved: Zeroconf advertising includes Machine ID and Database ID.
 
 The full list of commits can be found [here](https://github.com/basilfx/flask-daapserver/compare/v2.2.0...v2.3.0).
 
