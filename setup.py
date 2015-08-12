@@ -7,13 +7,13 @@ try:
     from Cython.Build import cythonize
 except ImportError:
     sys.stderr.write(
-        "Error: Cython is not installed. Please install Cython first with"
-        "`pip install Cython`.")
+        "Error: Cython is required, but not installed. Please install Cython "
+        "first with `pip install Cython`.")
     sys.exit(1)
 
 # Detect PyPy and fix dependencies
 try:
-    import __pypy__ # noqa
+    import __pypy__  # noqa
     dependency_links = [
         "http://github.com/surfly/gevent/tarball/master#egg=gevent"]
 except ImportError:
@@ -41,7 +41,7 @@ setup(
         "daapserver/daap.pyx",
         "daapserver/collection.pyx",
         "daapserver/models.pyx",
-        "daapserver/responses.py",
+        "daapserver/responses.pyx",
         "daapserver/revision.pyx",
     ]),
     classifiers=[

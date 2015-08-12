@@ -1,6 +1,7 @@
 from daapserver.daap import DAAPObject
 from daapserver import daap
 
+from daapserver.models cimport Database, Item, Container, ContainerItem
 
 def login(provider, session_id):
     """
@@ -92,7 +93,7 @@ def databases(provider, new, old, added, removed, is_update):
     """
 
     # Single database response
-    def _database(database):
+    def _database(Database database):
         data = [
             DAAPObject("dmap.itemid", database.id),
             DAAPObject("dmap.itemname", database.name),
@@ -128,7 +129,7 @@ def containers(provider, new, old, added, removed, is_update):
     """
 
     # Single container response
-    def _container(container):
+    def _container(Container container):
         data = [
             DAAPObject("dmap.itemid", container.id),
             DAAPObject("dmap.itemname", container.name),
@@ -170,7 +171,7 @@ def container_items(provider, new, old, added, removed, is_update):
     """
 
     # Single container response
-    def _container_item(container_item):
+    def _container_item(ContainerItem container_item):
         data = [
             DAAPObject("dmap.itemkind", 2),
             DAAPObject("dmap.itemid", container_item.item_id),
@@ -200,7 +201,7 @@ def items(provider, new, old, added, removed, is_update):
     """
 
     # Single item response
-    def _item(item):
+    def _item(Item item):
         data = [
             DAAPObject("dmap.itemid", item.id),
             DAAPObject("dmap.itemkind", 2),
