@@ -10,7 +10,7 @@ The Digital Audio Access Protocol (DAAP) is a protocol designed by Apple to shar
 This Python module implements the full stack, providing a HTTP server (built around Flask), a high-level application layer and Bonjour/Zeroconf advertising.
 
 ## Data model
-DAAP uses an easy data model. The basic model consists of the following entities.
+The DAAP data model consists of the following entities:
 
 * Server
 * Databases
@@ -18,16 +18,50 @@ DAAP uses an easy data model. The basic model consists of the following entities
 * Items
 * Container Items
 
-A server contains databases, a database contains containers and items, a container contains container items and a container item is a one-to-many mapping between items and containers. While the DAAP client implementation of iTunes only supports one database per server, the protocol does not have any limitations. Therefore, this implementation does not limit you to add multiple databases.
+There are a few more, but the above ones have been implemented.
 
-If applicable to the client, data can be revisioned. Only changes are shared between server and client, happening in real time. Because several clients can be on different revisions, it's neccessary to keep track of all changes to the data model. This is done by a so-called tree revision storage. When all clients are up to date, the older revisions can be removed.
+A server contains databases, a database contains containers and items, a container contains container items and a container item is a one-to-many mapping between items and containers. While the DAAP client implementation of iTunes only supports one database per server, the models does not impose restrictions. Therefore, this implementation does not limit you to add multiple databases.
 
-The data model entities are implemented by classes. Parents do not share any reference to their children, but they can access to their hildren by IDs (e.g. `parent.child_id` versus `parent.child`).
+The DAAP protocol is efficient in updating the model. Only the changed entities are send to the client. For this to work, the server has to add revision (version) numbers to the entities, and map entities to revisions. Because several clients can be on different revisions, it is necessary to keep track of all revisions. When all clients are up to date, the older revisions can be cleaned.
+
+### Mutable versus immutable
+Python is a language that does not implement access modifiers (private/protected/public). Therefore, an instance variable can be changed, no matter from where. This makes it harder to implement immutable types. Cython (which converts Python to C), allows you to add these modifiers, in some sense.
+
+Support for immutable types was planned, but dropped for the following reasons:
+
+* Creating (copy of) objects is expensive, and there are many objects.
+* Cython objects ([Extension Types](http://docs.cython.org/src/userguide/extension_types.html)) should be subclassable in Python, which poses problems with these modifiers.
+* The DAAP protocol does not care about the object contents. For instance, if `obj_in_v3 is obj_in_v4`, and you change `obj_in_v4.name`, any client that still has to update to revision 3 will receive the change made in revision 4. This isn't a problem.
+
+Do note that, if you want to go for immutability, you have to keep in mind that objects may have more properties. For instance, the following will fail:
+
+```
+db_rev1 = Database(id=1, name="My DB")
+server.databases.add(db_rev1)
+server.databases[1] is db_rev1  # True
+
+db_rev1.items.add(Item(id=1, name="Song 1"))
+db_rev1.items.add(Item(id=2, name="Song 2"))
+db_rev1.items.add(Item(id=3, name="Song 3"))
+
+db_rev2 = Database(id=2, name="My Updated DB")
+server.databases.add(db_rev2)
+server.databases[1] is db_rev2  # True
+
+len(db_rev1.items) is not len(db_rev2.items)  # Reference to items lost.
+```
+
+The correct way is changing `db_rev2` to the following (the copy is redundant if you don't care about the reference problem):
+
+```
+db_rev2 = copy.copy(server.databases[1])
+db_rev2.name = "My Updated DB"
+```
 
 ## Installation
 Make sure Cython is installed. It is required to boost performance of some modules significantly.
 
-To install, simply run `pip install flask-daapser`. It should install all dependencies and compile the Cython-based modules. If you want the latest version, type `pip install git+https://github.com/basilfx/flask-daapserver`.
+To install, simply run `pip install flask-daapserver`. It should install all dependencies and compile the Cython-based modules. If you want the latest version, type `pip install git+https://github.com/basilfx/flask-daapserver`.
 
 PyPy 2.4 or later is supported. While all tests pass and examples work, it should be considered experimental.
 
@@ -37,7 +71,7 @@ The revisioning storage API has changed between version v2.3.0 and v3.0.0. Due t
 * Cython is required now.
 * The global object store has been removed. Every container now has its own store for its children. Therefore, it is very important to add objects in the right order. For instance, do not add a item to a database before adding the database to the server (the models do not offer advanced ORM functionality).
 * The previous version fixed compatibility with iTunes 12.1. For some reason, iTunes expected the first revision to be two. The fix simply included to start revisions from 2. This version removed this 'workaround', and now expects the first revision to be commited first, e.g. setting up the initial structure first. See the examples for more information.
-* Auto-commit has been removed. The user should commit manually. The `daapserver.models.BaseServer` has a `commit` method that will propagate the commit to all attached databases, containers and so forth.
+* Auto-commit of changed has been removed. The user should commit manually. The `daapserver.models.BaseServer` has a `commit` method that will propagate the commit to all attached databases, containers and so forth.
 * The `added()` and `edited()` methods on `daapserver.models.Collection` have been replaced by `updated()`. The DAAP protocol does not differ between both.
 
 To give an idea of the performance impact, the `Benchmark.py` script yielded an improvement of 108MB vs 196MB in memory usage and 0.8375s vs 4.3017s in time (100,000 items, Python 2.7.9, OS X 10.10, 64 Bits).
