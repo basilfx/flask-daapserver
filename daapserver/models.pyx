@@ -38,19 +38,6 @@ cdef class Server(object):
         return "%s(name=%s, revision=%d)" % (
             self.__class__.__name__, self.name, self.revision)
 
-    def copy(self, **kwargs):
-        """
-        Return a copy of this instance, with attributes in kwargs to update the
-        new instance.
-        """
-
-        cdef Server result = self.__copy__()
-
-        for key, value in kwargs.iteritems():
-            setattr(result, key, value)
-
-        return result
-
     def commit(self):
         """
         """
@@ -134,19 +121,6 @@ cdef class Database(object):
         return "%s(id=%d, name=%s)" % (
             self.__class__.__name__, self.id, self.name)
 
-    def copy(self, **kwargs):
-        """
-        Return a copy of this instance, with attributes in kwargs to update the
-        new instance.
-        """
-
-        cdef Database result = self.__copy__()
-
-        for key, value in kwargs.iteritems():
-            setattr(result, key, value)
-
-        return result
-
     cdef _commit(self, int revision):
         cdef Container container
 
@@ -216,19 +190,6 @@ cdef class Item(object):
         return "%s(id=%d, artist=%s, name=%s)" % (
             self.__class__.__name__, self.id, self.artist, self.name)
 
-    def copy(self, **kwargs):
-        """
-        Return a copy of this instance, with attributes in kwargs to update the
-        new instance.
-        """
-
-        cdef Item result = self.__copy__()
-
-        for key, value in kwargs.iteritems():
-            setattr(result, key, value)
-
-        return result
-
     def to_tree(self):
         """
         Generate a tree representation of this object and children.
@@ -277,19 +238,6 @@ cdef class Container(object):
         return "%s(id=%d, name=%s, is_base=%s)" % (
             self.__class__.__name__, self.id, self.name, self.is_base)
 
-    def copy(self, **kwargs):
-        """
-        Return a copy of this instance, with attributes in kwargs to update the
-        new instance.
-        """
-
-        cdef Container result = self.__copy__()
-
-        for key, value in kwargs.iteritems():
-            setattr(result, key, value)
-
-        return result
-
     cdef _commit(self, int revision):
         self.container_items.commit(revision)
 
@@ -336,19 +284,6 @@ cdef class ContainerItem(object):
 
         return "%s(id=%d, item_id=%d, order=%d)" % (
             self.__class__.__name__, self.id, self.item_id, self.order)
-
-    def copy(self, **kwargs):
-        """
-        Return a copy of this instance, with attributes in kwargs to update the
-        new instance.
-        """
-
-        cdef ContainerItem result = self.__copy__()
-
-        for key, value in kwargs.iteritems():
-            setattr(result, key, value)
-
-        return result
 
     def to_tree(self):
         """
