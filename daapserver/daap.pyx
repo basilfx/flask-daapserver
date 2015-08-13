@@ -23,8 +23,8 @@ cdef class DAAPObject(object):
     Represent a DAAP data object.
     """
 
-    def __cinit__(self, str code=None, value=None):
-        if code:
+    def __init__(self, str code=None, object value=None):
+        if code is not None:
             try:
                 self.code = dmapNames[code]
             except KeyError:
@@ -205,8 +205,7 @@ cdef class SpeedyDAAPObject(DAAPObject):
     the values.
     """
 
-    @cython.nonecheck(False)
-    def __cinit__(self, str code, int itype, object value):
+    def __init__(self, str code, int itype, object value):
         self.code = code
         self.itype = itype
         self.value = value

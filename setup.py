@@ -2,7 +2,7 @@ from setuptools import setup
 
 import sys
 
-# Make Cython optional
+# Check for Cython
 try:
     from Cython.Build import cythonize
 except ImportError:
@@ -18,6 +18,47 @@ try:
         "http://github.com/surfly/gevent/tarball/master#egg=gevent"]
 except ImportError:
     dependency_links = []
+
+# Add code transformer to Cython
+from Cython.Compiler import Pipeline, Visitor, ExprNodes, StringEncoding
+from daapserver.daap_data import dmapNames, dmapCodeTypes
+
+
+class DAAPObjectTransformer(Visitor.CythonTransform):
+    """
+    Convert all DAAPObject(x, y) into SpeedyDAAPObject(code[x], type[x], y).
+    """
+
+    def visit_CallNode(self, node):
+        if isinstance(node.function, ExprNodes.NameNode) and \
+                node.function.name == u"DAAPObject":
+
+            # Make sure we only convert DAAPObject(x, y) calls, nothing more.
+            if len(node.args) == 2:
+                code = dmapNames[node.args[0].value]
+                itype = dmapCodeTypes[code][1]
+
+                node.function.name = self.context.intern_ustring(
+                    u"SpeedyDAAPObject")
+                node.args[0] = ExprNodes.StringNode(
+                    node.pos, value=StringEncoding.BytesLiteral(code))
+                node.args.insert(1, ExprNodes.IntNode(
+                    node.pos, value=str(itype)))
+
+        # Visit method body.
+        self.visitchildren(node)
+
+        return node
+
+
+def new_create_pipeline(context, *args, **kwargs):
+    result = old_create_pipeline(context, *args, **kwargs)
+    result.insert(1, DAAPObjectTransformer(context))
+
+    return result
+
+old_create_pipeline = Pipeline.create_pipeline
+Pipeline.create_pipeline = new_create_pipeline
 
 # Setup definitions
 setup(
@@ -39,10 +80,10 @@ setup(
     zip_safe=False,
     ext_modules=cythonize([
         "daapserver/daap.pyx",
+        "daapserver/revision.pyx",
         "daapserver/collection.pyx",
         "daapserver/models.pyx",
         "daapserver/responses.pyx",
-        "daapserver/revision.pyx",
     ]),
     classifiers=[
         "Development Status :: 5 - Production/Stable",

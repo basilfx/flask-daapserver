@@ -1,5 +1,7 @@
-from daapserver.daap import DAAPObject
 from daapserver import daap
+
+from daapserver.models cimport Database, Item, Container, ContainerItem
+from daapserver.daap cimport DAAPObject, SpeedyDAAPObject
 
 def login(provider, session_id):
     """
