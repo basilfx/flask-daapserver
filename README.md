@@ -76,13 +76,6 @@ The revisioning storage API has changed between version v2.3.0 and v3.0.0. Due t
 
 To give an idea of the performance impact, the `Benchmark.py` script yielded an improvement of 108MB vs 196MB in memory usage and 0.8375s vs 4.3017s in time (100,000 items, Python 2.7.9, OS X 10.10, 64 Bits).
 
-### Experimental
-The script `utils/transform.py` can rewrite Python source code to make it more efficient at the expense of readability. It rewrites the following functions:
-
-* `DAAPObject(x, y)` into `SpeedyDAAPObject(code[x], type[x], y)`. Saves two dictionary lookups and simplifies instantiation. However, it bypasses (type) checking.
-
-To run this script, run `python utils/transform.py <input_file> <output_file>`, e.g. `python utils/transform.py daapserver/response.py daapserver/response_out.py`.
-
 ## Usage
 Take a look at the examples, or to the projects using Flask-DAAPServer:
 
