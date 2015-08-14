@@ -1,7 +1,8 @@
 __all__ = [
-    "dmapDataTypes", "dmapNames", "dmapReverseDataTypes", "dmapCodeTypes"]
+    "dmap_data_types", "dmap_names", "dmap_reverse_data_types",
+    "dmap_code_types"]
 
-dmapCodeTypes = {
+dmap_code_types = {
     "abal": ("daap.browsealbumlisting", 12),
     "abar": ("daap.browseartistlisting", 12),
     "abcp": ("daap.browsecomposerlisting", 12),
@@ -148,7 +149,7 @@ dmapCodeTypes = {
     "pret": ("dpap.unknown", 12),
 }
 
-dmapDataTypes = {
+dmap_data_types = {
     1: "b",   # byte
     2: "ub",  # unsigned byte
     3: "h",   # short
@@ -163,10 +164,10 @@ dmapDataTypes = {
     12: "c",  # container
 }
 
-dmapNames = {
-    dmapCodeTypes[k][0]: k for k in dmapCodeTypes
+dmap_names = {
+    dmap_code_types[k][0]: k for k in dmap_code_types
 }
 
-dmapReverseDataTypes = {
-    dmapDataTypes[k]: k for k in dmapDataTypes
+dmap_reverse_data_types = {
+    dmap_data_types[k]: k for k in dmap_data_types
 }

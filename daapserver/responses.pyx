@@ -33,15 +33,15 @@ def content_codes(provider):
     children = [DAAPObject("dmap.status", 200)]
     data = DAAPObject("dmap.contentcodesresponse", children)
 
-    for code in daap.dmapCodeTypes.iterkeys():
-        name, itype = daap.dmapCodeTypes[code]
+    for code in daap.dmap_code_types.iterkeys():
+        name, itype = daap.dmap_code_types[code]
 
         children.append(
             DAAPObject("dmap.dictionary", [
                 DAAPObject("dmap.contentcodesnumber", code),
                 DAAPObject("dmap.contentcodesname", name),
                 DAAPObject(
-                    "dmap.contentcodestype", daap.dmapReverseDataTypes[itype])
+                    "dmap.contentcodestype", daap.dmap_reverse_data_types[itype])
             ])
         )
 

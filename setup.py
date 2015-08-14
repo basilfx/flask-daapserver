@@ -21,7 +21,7 @@ except ImportError:
 
 # Add code transformer to Cython
 from Cython.Compiler import Pipeline, Visitor, ExprNodes, StringEncoding
-from daapserver.daap_data import dmapNames, dmapCodeTypes
+from daapserver.daap_data import dmap_names, dmap_code_types
 
 
 class DAAPObjectTransformer(Visitor.CythonTransform):
@@ -35,8 +35,8 @@ class DAAPObjectTransformer(Visitor.CythonTransform):
 
             # Make sure we only convert DAAPObject(x, y) calls, nothing more.
             if len(node.args) == 2:
-                code = dmapNames[node.args[0].value]
-                itype = dmapCodeTypes[code][1]
+                code = dmap_names[node.args[0].value]
+                itype = dmap_code_types[code][1]
 
                 node.function.name = self.context.intern_ustring(
                     u"SpeedyDAAPObject")

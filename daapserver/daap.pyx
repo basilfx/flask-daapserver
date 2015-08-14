@@ -11,8 +11,8 @@
 #
 # Stripped more clean + more bug fixes, Bas Stottelaar
 
-from daapserver.daap_data import dmapDataTypes, dmapNames, \
-    dmapReverseDataTypes, dmapCodeTypes
+from daapserver.daap_data import dmap_data_types, dmap_names, \
+    dmap_reverse_data_types, dmap_code_types
 
 import struct
 import cython
@@ -26,17 +26,17 @@ cdef class DAAPObject(object):
     def __init__(self, str code=None, object value=None):
         if code is not None:
             try:
-                self.code = dmapNames[code]
+                self.code = dmap_names[code]
             except KeyError:
                 raise ValueError("Unexpected code '%s'" % code)
 
-            self.itype = dmapCodeTypes[self.code][1]
+            self.itype = dmap_code_types[self.code][1]
             self.value = value
 
     def to_tree(self, int level=0):
         yield "\t" * level + "%s (%s)\t%s\t%s\n" % (
-            dmapCodeTypes[self.code][0], self.code,
-            dmapReverseDataTypes[self.itype], self.value)
+            dmap_code_types[self.code][0], self.code,
+            dmap_reverse_data_types[self.itype], self.value)
 
         if self.itype == 12:
             for obj in self.value:
@@ -68,7 +68,7 @@ cdef class DAAPObject(object):
             except struct.error as e:
                 raise ValueError(
                     "Error while packing code '%s' ('%s'): %s" %
-                    (self.code, dmapCodeTypes[self.code][0], e))
+                    (self.code, dmap_code_types[self.code][0], e))
         else:
             value = self.value
 
@@ -117,7 +117,7 @@ cdef class DAAPObject(object):
                 packing = "%ss" % length
             else:
                 raise ValueError(
-                    "Unexpected type %d" % dmapReverseDataTypes[self.itype])
+                    "Unexpected type %d" % dmap_reverse_data_types[self.itype])
 
             # Pack data: 4 characters for the code, 4 bytes for the length
             # and length bytes for the value
@@ -127,7 +127,7 @@ cdef class DAAPObject(object):
             except struct.error as e:
                 raise ValueError(
                     "Error while packing code '%s' ('%s'): %s" % (
-                        self.code, dmapCodeTypes[self.code][0], e))
+                        self.code, dmap_code_types[self.code][0], e))
 
     @cython.boundscheck(False)
     def decode(self, stream):
@@ -146,7 +146,7 @@ cdef class DAAPObject(object):
 
         # Now we need to find out what type of object it is
         try:
-            self.itype = dmapCodeTypes[self.code][1]
+            self.itype = dmap_code_types[self.code][1]
         except KeyError:
             raise ValueError("Unknown code '%s'" % self.code)
 
@@ -194,7 +194,7 @@ cdef class DAAPObject(object):
                         "!%ss" % length, data)[0], "latin-1")
             else:
                 raise ValueError(
-                    "Unexpected type '%s'" % dmapDataTypes[self.itype])
+                    "Unexpected type '%s'" % dmap_data_types[self.itype])
 
             self.value = value
 
