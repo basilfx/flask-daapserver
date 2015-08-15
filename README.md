@@ -63,8 +63,6 @@ Make sure Cython is installed. It is required to boost performance of some modul
 
 To install, simply run `pip install flask-daapserver`. It should install all dependencies and compile the Cython-based modules. If you want the latest version, type `pip install git+https://github.com/basilfx/flask-daapserver`.
 
-PyPy 2.4 or later is supported. While all tests pass and examples work, it should be considered experimental.
-
 ### Upgrade notice
 The revisioning storage API has changed between version v2.3.0 and v3.0.0. Due to the large overhead of revisioning, it was decided that there should be less memory usage and faster access. While the API has remained similar, a few changes have been made:
 

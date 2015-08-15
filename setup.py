@@ -11,13 +11,6 @@ except ImportError:
         "first with `pip install Cython`.")
     sys.exit(1)
 
-# Detect PyPy and fix dependencies
-try:
-    import __pypy__  # noqa
-    dependency_links = [
-        "http://github.com/surfly/gevent/tarball/master#egg=gevent"]
-except ImportError:
-    dependency_links = []
 
 # Add code transformer to Cython
 from Cython.Compiler import Pipeline, Visitor, ExprNodes, StringEncoding
@@ -71,7 +64,6 @@ setup(
     packages=["daapserver"],
     package_dir={"daapserver": "daapserver"},
     setup_requires=["nose"],
-    dependency_links=dependency_links,
     install_requires=["flask", "zeroconf", "gevent", "enum"],
     platforms=["any"],
     license="MIT",
