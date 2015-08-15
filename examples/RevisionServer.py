@@ -2,11 +2,12 @@ from daapserver.models import Server, Database, Item, Container, ContainerItem
 from daapserver import DaapServer, provider
 
 import sys
-import logging
+import copy
 import gevent
+import random
+import logging
 import gevent.event
 import gevent.lock
-import random
 
 # Logger instance
 logger = logging.getLogger(__name__)
@@ -49,7 +50,10 @@ class RevisionProvider(provider.Provider):
         while True:
             with self.lock:
                 # Decide what to do
-                choice = random.choice(["add", "add", "remove"])
+                if not database.items:
+                    choice = "add"
+                else:
+                    choice = random.choice(["add", "update", "remove"])
 
                 if choice == "add":
                     item = Item(
@@ -65,10 +69,29 @@ class RevisionProvider(provider.Provider):
                         "%d." % (
                             item.id, len(database.items),
                             self.server.revision))
-                elif choice == "remove":
-                    if len(database.items) == 0:
-                        continue
+                elif choice == "update":
+                    item = random.choice(database.items.values())
+                    container_item = database.containers[1] \
+                                             .container_items[item.id]
 
+                    # Copy the items. This step is optional if you don't care
+                    # if older revision will all have the same data.
+                    item = copy.copy(item)
+                    container_item = copy.copy(container_item)
+
+                    # Update some properties.
+                    item.duration += 1000 * 60  # One minute
+
+                    database.containers[1] \
+                            .container_items \
+                            .add(container_item)
+                    database.items.add(item)
+                    logger.info(
+                        "Item %d updated, %d items in container. Revision is "
+                        "%d." % (
+                            item.id, len(database.items),
+                            self.server.revision))
+                elif choice == "remove":
                     item = random.choice(database.items.values())
                     container_item = database.containers[1] \
                                              .container_items[item.id]
