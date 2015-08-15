@@ -72,7 +72,7 @@ The revisioning storage API has changed between version v2.3.0 and v3.0.0. Due t
 * Auto-commit of changed has been removed. The user should commit manually. The `daapserver.models.BaseServer` has a `commit` method that will propagate the commit to all attached databases, containers and so forth.
 * The `added()` and `edited()` methods on `daapserver.models.Collection` have been replaced by `updated()`. The DAAP protocol does not differ between both.
 
-To give an idea of the performance impact, the `Benchmark.py` script yielded an improvement of 108MB vs 196MB in memory usage and 0.8375s vs 4.3017s in time (100,000 items, Python 2.7.9, OS X 10.10, 64 Bits).
+To give an idea of the performance impact, the `utils/benchmark.py` script yielded an improvement of 108MB vs 196MB in memory usage and 0.8375s vs 4.3017s in time (100,000 items, Python 2.7.9, OS X 10.10, 64 Bits).
 
 ## Usage
 Take a look at the examples, or to the projects using Flask-DAAPServer:
@@ -82,7 +82,6 @@ Take a look at the examples, or to the projects using Flask-DAAPServer:
 ## Examples
 There are four examples included in the `examples/` directory. You can run them with `python examples/<filename>`. Check the source for more information and the details.
 
-* `Benchmark.py` &mdash; Benchmark revision tree speed and memory usage.
 * `ExampleServer.py` &mdash; Most basic example of a DAAP server.
 * `RevisionServer.py` &mdash; Demonstration of revisioning capabilities.
 * `SoundcloudServer.py` &mdash; Soundcloud server that streams all tracks of a certain users. Requires a Client ID and the Soundcloud Python module.
