@@ -29,7 +29,7 @@ setup(
     packages=["daapserver"],
     package_dir={"daapserver": "daapserver"},
     setup_requires=["nose"],
-    install_requires=["flask", "zeroconf", "gevent", "enum"],
+    install_requires=["flask", "zeroconf", "gevent", "enum34"],
     platforms=["any"],
     license="MIT",
     url="https://github.com/basilfx/flask-daapserver",
