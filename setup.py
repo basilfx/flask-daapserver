@@ -15,7 +15,7 @@ except ImportError:
 
 # Install pre-compiler stage. Cannot use normal import
 precompiler = imp.load_source("precompiler", os.path.join(
-    os.path.dirname(__file__), "utils/precompiler.py"))
+    os.path.dirname(__file__), "utils/transformer.py"))
 precompiler.install_new_pipeline()
 
 # Setup definitions
