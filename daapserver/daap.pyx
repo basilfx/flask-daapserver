@@ -15,7 +15,6 @@ from daapserver.daap_data import dmap_data_types, dmap_names, \
     dmap_reverse_data_types, dmap_code_types
 
 import struct
-import cython
 
 
 cdef class DAAPObject(object):
@@ -23,17 +22,33 @@ cdef class DAAPObject(object):
     Represent a DAAP data object.
     """
 
-    def __init__(self, str code=None, object value=None):
-        if code is not None:
+    def __init__(self, str name=None, object value=None):
+        """
+        Create a new DAAPObject. The name must be an existing property in the
+        `daapserver.daap_data' module.
+
+        If `name' is None, an empty object is instantiated.
+
+        :param str name: Name of DAAP property (optional).
+        :param object value: Value of DAAP property (optional).
+        """
+
+        if name is not None:
             try:
-                self.code = dmap_names[code]
+                self.code = dmap_names[name]
             except KeyError:
-                raise ValueError("Unexpected code '%s'" % code)
+                raise ValueError("Unexpected code '%s'" % name)
 
             self.itype = dmap_code_types[self.code][1]
             self.value = value
 
     def to_tree(self, int level=0):
+        """
+        Convert a DAAPObject to a tree representation.
+
+        :param int level: Current level.
+        """
+
         yield "\t" * level + "%s (%s)\t%s\t%s\n" % (
             dmap_code_types[self.code][0], self.code,
             dmap_reverse_data_types[self.itype], self.value)
@@ -42,8 +57,14 @@ cdef class DAAPObject(object):
             for obj in self.value:
                 yield obj.to_tree(level + 1)
 
-    @cython.boundscheck(False)
     def encode(self):
+        """
+        Encode a DAAPObject instance.
+
+        :return: Serialized string representation of object.
+        :rtype: str
+        """
+
         cdef int length
         cdef str packing
         cdef bytearray data
@@ -129,8 +150,13 @@ cdef class DAAPObject(object):
                     "Error while packing code '%s' ('%s'): %s" % (
                         self.code, dmap_code_types[self.code][0], e))
 
-    @cython.boundscheck(False)
     def decode(self, stream):
+        """
+        Decode a stream to DAAPObjects.
+
+        :param stream Stream: Data stream (e.g. cStringIO).
+        """
+
         cdef int length
         cdef int start_pos
         cdef str data
@@ -206,6 +232,15 @@ cdef class SpeedyDAAPObject(DAAPObject):
     """
 
     def __init__(self, str code, int itype, object value):
+        """
+        Instantiate a new SpeedyDAAPObject. This constructor bypasses checks.
+
+        :param str code: DAAP property code.
+        :param int itype: Code representing value type (see
+                          `daapserver.daap_data)'.
+        :param object value: value of item.
+        """
+
         self.code = code
         self.itype = itype
         self.value = value

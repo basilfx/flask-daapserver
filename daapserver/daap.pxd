@@ -1,6 +1,7 @@
 cdef class DAAPObject(object):
-    cdef object value
-    cdef str code
+    cdef readonly object value
+    cdef readonly str code
+
     cdef int itype
 
 
