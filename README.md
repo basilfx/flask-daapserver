@@ -68,7 +68,7 @@ The revisioning storage API has changed between version v2.3.0 and v3.0.0. Due t
 
 * Cython is required now.
 * The global object store has been removed. Every container now has its own store for its children. Therefore, it is very important to add objects in the right order. For instance, do not add a item to a database before adding the database to the server (the models do not offer advanced ORM functionality).
-* The previous version fixed compatibility with iTunes 12.1. For some reason, iTunes expected the first revision to be two. The fix simply included to start revisions from 2. This version removed this 'workaround', and now expects the first revision to be commited first, e.g. setting up the initial structure first. See the examples for more information.
+* The previous version fixed compatibility with iTunes 12.1. For some reason, iTunes expected the first revision to be two. The fix simply included to start revisions from 2. This version removed this 'workaround', and now expects the first revision to be committed first, e.g. setting up the initial structure first. See the examples for more information.
 * Auto-commit of changed has been removed. The user should commit manually. The `daapserver.models.BaseServer` has a `commit` method that will propagate the commit to all attached databases, containers and so forth.
 * The `added()` and `edited()` methods on `daapserver.models.Collection` have been replaced by `updated()`. The DAAP protocol does not differ between both.
 

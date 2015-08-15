@@ -10,7 +10,7 @@ __all__ = ("LocalFileProvider", "Provider", "Session")
 
 class State(Enum):
     """
-    Client session states.s
+    Client session states.
     """
 
     connecting = 1
