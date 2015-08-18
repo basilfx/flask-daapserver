@@ -9,3 +9,10 @@ cdef class ImmutableCollection(object):
 
 cdef class MutableCollection(ImmutableCollection):
     pass
+
+
+cdef class LazyMutableCollection(MutableCollection):
+    cdef public bint busy
+    cdef public bint ready
+    cdef public pending_commit
+    cdef public object iter_item

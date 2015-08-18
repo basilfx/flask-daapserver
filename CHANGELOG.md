@@ -6,9 +6,11 @@ Released XX August 2015
 Highlights:
 * Added: new data storage backend with simplified revisioning store (less memory).
 * Added: implemented copy protocol to create copies of data.
+* Added: lazy collection for items.
 * Changed: Cython is now required.
 * Improved: performance of encoder and response generator.
 * Improved: updated examples.
+* Improved: test coverage.
 
 The full list of commits can be found [here](https://github.com/basilfx/flask-daapserver/compare/v2.3.0...v3.0.0).
 

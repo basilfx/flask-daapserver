@@ -1,5 +1,6 @@
 from daapserver.collection cimport MutableCollection
 
+
 cdef class Server(object):
     cdef public int revision
 
