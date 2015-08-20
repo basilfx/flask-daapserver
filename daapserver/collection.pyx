@@ -152,6 +152,7 @@ cdef class LazyMutableCollection(MutableCollection):
 
         self.busy = False
         self.ready = False
+        self.modified = False
         self.pending_commit = -1
         self.iter_item = None
 
@@ -203,7 +204,7 @@ cdef class LazyMutableCollection(MutableCollection):
 
         # Store commit if not yet ready. It will be commited when items are
         # loaded.
-        if not self.ready:
+        if self.modified and not self.ready:
             self.pending_commit = revision
         else:
             super(LazyMutableCollection, self).commit(revision)
@@ -212,10 +213,24 @@ cdef class LazyMutableCollection(MutableCollection):
         """
         """
 
-        if self.pending_commit != -1:
+        if self.modified and self.pending_commit != -1:
             raise ValueError("A pending commit is left.")
 
         super(LazyMutableCollection, self).clean(revision)
+
+    def add(self, item):
+        """
+        """
+
+        self.modified = True
+        super(LazyMutableCollection, self).add(item)
+
+    def remove(self, item):
+        """
+        """
+
+        self.modified = True
+        super(LazyMutableCollection, self).remove(item)
 
     def __contains__(self, key):
         """
