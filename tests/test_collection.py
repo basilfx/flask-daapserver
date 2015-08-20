@@ -119,23 +119,50 @@ class TestLazyMutableCollection(unittest.TestCase):
         self.assertEqual(len(self.collection), 5)
         self.assertTrue(self.collection.ready)
 
-    def test_pending_commit(self):
+    def test_modified_and_pending_commit(self):
         """
-        Check if non-ready commit makes it a pending one.
+        Check if non-ready commit makes it a pending one, except if not
+        modified.
         """
 
         self.assertFalse(self.collection.ready)
+        self.assertFalse(self.collection.modified)
         self.assertEqual(self.collection.pending_commit, -1)
 
+        # Commit, but nothing was modified, so it is safe to commit.
         self.collection.commit(2)
-        self.assertFalse(self.collection.ready)
-        self.assertEqual(self.collection.pending_commit, 2)
 
-        self.assertListEqual(self.collection.keys(), [0, 1, 2, 3, 4])
+        self.assertFalse(self.collection.ready)
+        self.assertFalse(self.collection.modified)
+        self.assertEqual(self.collection.pending_commit, -1)
+
+        # Add one item, which will make it modified.
+        self.collection.add(MyItem(1, self.collection.registry))
+
+        self.assertFalse(self.collection.ready)
+        self.assertTrue(self.collection.modified)
+        self.assertEqual(self.collection.pending_commit, -1)
+
+        # Commit again, this time the collection is modified and commit will be
+        # pended.
+        self.collection.commit(3)
+
+        self.assertFalse(self.collection.ready)
+        self.assertTrue(self.collection.modified)
+        self.assertEqual(self.collection.pending_commit, 3)
+
+        # Load all keys, which will make it ready and commit
+        keys = self.collection.keys()
+
+        self.assertListEqual(keys, [0, 1, 2, 3, 4])
+        self.assertTrue(self.collection.modified)
         self.assertTrue(self.collection.ready)
         self.assertEqual(self.collection.pending_commit, -1)
 
-        self.collection.commit(3)
+        # Collection is ready, so next commit will not pend it.
+        self.collection.commit(4)
+
+        self.assertTrue(self.collection.modified)
         self.assertTrue(self.collection.ready)
         self.assertEqual(self.collection.pending_commit, -1)
 
