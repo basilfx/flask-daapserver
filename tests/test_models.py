@@ -1,4 +1,6 @@
-from daapserver.models import Server, Database, Item
+# -*- coding: utf-8 -*-
+
+from daapserver.models import Server, Database, Item, Container, ContainerItem
 
 import unittest
 
@@ -7,6 +9,29 @@ class ModelsTest(unittest.TestCase):
     """
     Test models.
     """
+
+    def test_unicode_str_repr(self):
+        """
+        Test model to unicode, string and representation methods.
+        """
+
+        server = Server(name=u"Björn Borg")
+        db = Database(id=1, name=u"Hellö Wörld")
+        item = Item(
+            id=2, artist=u"Slagsmålsklubben", album="Fest i valen",
+            name="Sponsored by Destiny")
+        container = Container(id=3, name=u"Knäckebröd")
+        container_item = ContainerItem(id=4, item_id=2, container_id=3)
+
+        for instance in [server, db, item, container, container_item]:
+            # Type checking
+            self.assertTrue(type(unicode(instance)), unicode)
+            self.assertTrue(type(str(instance)), str)
+            self.assertTrue(type(repr(instance)), str)
+
+            # String variant replaces non-ascii characters
+            self.assertTrue(
+                unicode(instance).encode("ascii", "replace") == str(instance))
 
     def test_store(self):
         """

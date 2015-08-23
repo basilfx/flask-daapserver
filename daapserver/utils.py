@@ -76,14 +76,14 @@ def to_tree(instance, *children):
     """
 
     # Yield representation of self
-    yield repr(instance)
+    yield unicode(instance)
 
     # Iterate trough each instance child collection
     for i, child in enumerate(children):
         lines = 0
 
         yield "|"
-        yield "+---" + repr(child)
+        yield "+---" + unicode(child)
 
         if i != len(children) - 1:
             a = "|"

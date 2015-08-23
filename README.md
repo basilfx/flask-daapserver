@@ -24,6 +24,8 @@ A server contains databases, a database contains containers and items, a contain
 
 The DAAP protocol is efficient in updating the model. Only the changed entities are send to the client. For this to work, the server has to add revision (version) numbers to the entities, and map entities to revisions. Because several clients can be on different revisions, it is necessary to keep track of all revisions. When all clients are up to date, the older revisions can be cleaned.
 
+The DAAP protocol assumes that string are encoded as UTF-8. Therefore, you are encouraged to use unicode objects where possible.
+
 ### Mutable versus immutable
 Python is a language that does not implement access modifiers (private/protected/public). Therefore, an instance variable can be changed, no matter from where. This makes it harder to implement immutable types. Cython (which converts Python to C), allows you to add these modifiers, in some sense.
 

@@ -1,4 +1,6 @@
-from daapserver.collection import LazyMutableCollection
+# -*- coding: utf-8 -*-
+
+from daapserver.collection import ImmutableCollection, LazyMutableCollection
 
 import unittest
 import collections
@@ -75,6 +77,30 @@ class MyLazyMutableCollection(LazyMutableCollection):
 
         finally:
             self.busy = False
+
+
+class TestImmutableCollection(unittest.TestCase):
+    """
+    Test cases for `daapserver.collection.ImmutableCollection'.
+    """
+
+    def test_unicode_str_repr(self):
+        """
+        Test model to unicode, string and representation methods.
+        """
+
+        immutable_collection = ImmutableCollection(
+            parent=u"Nörmally an öbject")
+
+        for instance in [immutable_collection]:
+            # Type checking
+            self.assertTrue(type(unicode(instance)), unicode)
+            self.assertTrue(type(str(instance)), str)
+            self.assertTrue(type(repr(instance)), str)
+
+            # String variant replaces non-ascii characters
+            self.assertTrue(
+                unicode(instance).encode("ascii", "replace") == str(instance))
 
 
 class TestLazyMutableCollection(unittest.TestCase):

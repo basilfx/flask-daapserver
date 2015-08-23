@@ -10,6 +10,13 @@ cdef class Server(object):
     databases_collection_class = MutableCollection
 
     def __init__(self, **kwargs):
+        """
+        Initialize a new Server. Copies any key-value from kwargs to the
+        attributes of this instance.
+
+        The Server is the only instance that does not require an ID.
+        """
+
         self.databases = self.databases_collection_class(self)
 
         for key, value in kwargs.iteritems():
@@ -18,6 +25,9 @@ cdef class Server(object):
     def __copy__(self):
         """
         Return a copy of this instance.
+
+        :return: Copy of this instance.
+        :rtype Server:
         """
 
         cdef Server result = <Server> copy.copy(super(Server, self))
@@ -31,12 +41,37 @@ cdef class Server(object):
 
         return result
 
-    def __repr__(self):
+    def __unicode__(self):
         """
+        Return an unicode representation of this instance.
+
+        :return: Unicode representation.
+        :rtype unicode:
         """
 
-        return "%s(name=%s, revision=%d)" % (
+        return u"%s(name=%s, revision=%d)" % (
             self.__class__.__name__, self.name, self.revision)
+
+    def __str__(self):
+        """
+        Return a string representation of this instance. Any non-ASCII
+        characters will be replaced.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return unicode(self).encode("ascii", "replace")
+
+    def __repr__(self):
+        """
+        Return instance representation. Uses the `__str__' method.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return str(self)
 
     def commit(self):
         """
@@ -54,6 +89,8 @@ cdef class Server(object):
 
     cdef _commit(self, int revision):
         """
+        Actual implementation of the commit method. Propagates the commit to
+        items in the collections.
         """
 
         cdef Database database
@@ -65,6 +102,8 @@ cdef class Server(object):
 
     cdef _clean(self, int revision):
         """
+        Actual implementation of the clean method. Propagates the clean to
+        items in the collections.
         """
 
         cdef Database database
@@ -78,7 +117,7 @@ cdef class Server(object):
         """
         Generate a tree representation of this object and children.
 
-        :return: Tree representation as a string
+        :return: Tree representation as a string.
         :rtype str:
         """
         return utils.to_tree(self, self.databases)
@@ -92,6 +131,11 @@ cdef class Database(object):
     containers_collection_class = MutableCollection
 
     def __init__(self, **kwargs):
+        """
+        Initialize a new Database. Copies any key-value from kwargs to the
+        attributes of this instance.
+        """
+
         self.items = self.items_collection_class(self)
         self.containers = self.containers_collection_class(self)
 
@@ -101,6 +145,9 @@ cdef class Database(object):
     def __copy__(self):
         """
         Return a copy of this instance.
+
+        :return: Copy of this instance.
+        :rtype Database:
         """
 
         cdef Database result = <Database> copy.copy(super(Database, self))
@@ -114,14 +161,44 @@ cdef class Database(object):
 
         return result
 
-    def __repr__(self):
+    def __unicode__(self):
         """
+        Return an unicode representation of this instance.
+
+        :return: Unicode representation.
+        :rtype unicode:
         """
 
-        return "%s(id=%d, name=%s)" % (
+        return u"%s(id=%d, name=%s)" % (
             self.__class__.__name__, self.id, self.name)
 
+    def __str__(self):
+        """
+        Return a string representation of this instance. Any non-ASCII
+        characters will be replaced.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return unicode(self).encode("ascii", "replace")
+
+    def __repr__(self):
+        """
+        Return instance representation. Uses the `__str__' method.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return str(self)
+
     cdef _commit(self, int revision):
+        """
+        Actual implementation of the commit method. Propagates the commit to
+        items in the collections.
+        """
+
         cdef Container container
 
         self.items.commit(revision)
@@ -131,6 +208,11 @@ cdef class Database(object):
             container._commit(revision)
 
     cdef _clean(self, int revision):
+        """
+        Actual implementation of the clean method. Propagates the clean to
+        items in the collections.
+        """
+
         cdef Container container
 
         self.items.clean(revision)
@@ -143,7 +225,7 @@ cdef class Database(object):
         """
         Generate a tree representation of this object and children.
 
-        :return: Tree representation as a string
+        :return: Tree representation as a string.
         :rtype str:
         """
         return utils.to_tree(self, self.items, self.containers)
@@ -154,12 +236,20 @@ cdef class Item(object):
     __slots__ = ()
 
     def __init__(self, **kwargs):
+        """
+        Initialize a new Item. Copies any key-value from kwargs to the
+        attributes of this instance.
+        """
+
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
     def __copy__(self):
         """
         Return a copy of this instance.
+
+        :return: Copy of this instance.
+        :rtype Item:
         """
 
         cdef Item result = <Item> copy.copy(super(Item, self))
@@ -183,18 +273,43 @@ cdef class Item(object):
 
         return result
 
-    def __repr__(self):
+    def __unicode__(self):
         """
+        Return an unicode representation of this instance.
+
+        :return: Unicode representation.
+        :rtype unicode:
         """
 
-        return "%s(id=%d, artist=%s, name=%s)" % (
+        return u"%s(id=%d, artist=%s, name=%s)" % (
             self.__class__.__name__, self.id, self.artist, self.name)
+
+    def __str__(self):
+        """
+        Return a string representation of this instance. Any non-ASCII
+        characters will be replaced.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return unicode(self).encode("ascii", "replace")
+
+    def __repr__(self):
+        """
+        Return instance representation. Uses the `__str__' method.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return str(self)
 
     def to_tree(self):
         """
         Generate a tree representation of this object and children.
 
-        :return: Tree representation as a string
+        :return: Tree representation as a string.
         :rtype str:
         """
         return utils.to_tree(self)
@@ -207,6 +322,11 @@ cdef class Container(object):
     container_items_collection_class = MutableCollection
 
     def __init__(self, **kwargs):
+        """
+        Initialize a new Container. Copies any key-value from kwargs to the
+        attributes of this instance.
+        """
+
         self.container_items = self.container_items_collection_class(self)
 
         for key, value in kwargs.iteritems():
@@ -215,6 +335,9 @@ cdef class Container(object):
     def __copy__(self):
         """
         Return a copy of this instance.
+
+        :return: Copy of this instance.
+        :rtype Container:
         """
 
         cdef Container result = <Container> copy.copy(super(Container, self))
@@ -231,24 +354,59 @@ cdef class Container(object):
 
         return result
 
-    def __repr__(self):
+    def __unicode__(self):
         """
+        Return an unicode representation of this instance.
+
+        :return: Unicode representation.
+        :rtype unicode:
         """
 
-        return "%s(id=%d, name=%s, is_base=%s)" % (
+        return u"%s(id=%d, name=%s, is_base=%s)" % (
             self.__class__.__name__, self.id, self.name, self.is_base)
 
+    def __str__(self):
+        """
+        Return a string representation of this instance. Any non-ASCII
+        characters will be replaced.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return unicode(self).encode("ascii", "replace")
+
+    def __repr__(self):
+        """
+        Return instance representation. Uses the `__str__' method.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return str(self)
+
     cdef _commit(self, int revision):
+        """
+        Actual implementation of the commit method. Propagates the commit to
+        items in the collections.
+        """
+
         self.container_items.commit(revision)
 
     cdef _clean(self, int revision):
+        """
+        Actual implementation of the clean method. Propagates the clean to
+        items in the collections.
+        """
+
         self.container_items.clean(revision)
 
     def to_tree(self):
         """
         Generate a tree representation of this object and children.
 
-        :return: Tree representation as a string
+        :return: Tree representation as a string.
         :rtype str:
         """
         return utils.to_tree(self, self.container_items)
@@ -259,12 +417,20 @@ cdef class ContainerItem(object):
     __slots__ = ()
 
     def __init__(self, **kwargs):
+        """
+        Initialize a new ContainerItem. Copies any key-value from kwargs to the
+        attributes of this instance.
+        """
+
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
     def __copy__(self):
         """
         Return a copy of this instance.
+
+        :return: Copy of this instance.
+        :rtype ContainerItem:
         """
 
         cdef ContainerItem result = <ContainerItem> copy.copy(
@@ -278,18 +444,43 @@ cdef class ContainerItem(object):
 
         return result
 
-    def __repr__(self):
+    def __unicode__(self):
         """
+        Return an unicode representation of this instance.
+
+        :return: Unicode representation.
+        :rtype unicode:
         """
 
-        return "%s(id=%d, item_id=%d, order=%d)" % (
+        return u"%s(id=%d, item_id=%d, order=%d)" % (
             self.__class__.__name__, self.id, self.item_id, self.order)
+
+    def __str__(self):
+        """
+        Return a string representation of this instance. Any non-ASCII
+        characters will be replaced.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return unicode(self).encode("ascii", "replace")
+
+    def __repr__(self):
+        """
+        Return instance representation. Uses the `__str__' method.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return str(self)
 
     def to_tree(self):
         """
         Generate a tree representation of this object and children.
 
-        :return: Tree representation as a string
+        :return: Tree representation as a string.
         :rtype str:
         """
         return utils.to_tree(self)

@@ -50,12 +50,37 @@ cdef class ImmutableCollection(object):
 
         return self.iterkeys()
 
-    def __repr__(self):
+    def __unicode__(self):
         """
+        Return an unicode representation of this instance.
+
+        :return: Unicode representation.
+        :rtype unicode:
         """
 
-        return "%s(revision=%d, store=%s)" % (
+        return u"%s(revision=%d, store=%s)" % (
             self.__class__.__name__, self.revision, self.store)
+
+    def __str__(self):
+        """
+        Return a string representation of this instance. Any non-ASCII
+        characters will be replaced.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return unicode(self).encode("ascii", "replace")
+
+    def __repr__(self):
+        """
+        Return instance representation. Uses the `__str__' method.
+
+        :return: String representation.
+        :rtype str:
+        """
+
+        return str(self)
 
     def iterkeys(self):
         """
