@@ -65,14 +65,8 @@ class ExampleProvider(provider.Provider):
         container_two.container_items.add(container_item_two_b)
         container_two.container_items.add(container_item_two_c)
 
-        # Commit this revision
-        server.commit()
-
-    def wait_for_update(self):
-        # In a real server, this should block until an update and return the
-        # next revision number.
-        while True:
-            gevent.sleep(1)
+        # Inform provider that the structure is ready.
+        self.update()
 
     def get_item_data(self, *args, **kwargs):
         # Normally, you would provide a file pointer or raw bytes here.
@@ -84,13 +78,13 @@ def main():
         level=logging.DEBUG,
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
-    # Create server
+    # Create a server.
     server = DaapServer(
         provider=ExampleProvider(),
         port=3688,
         debug=True)
 
-    # Start a server and wait
+    # Start a server and wait until CTRL + C is pressed.
     server.serve_forever()
 
 # E.g. `python ExampleServer.py'

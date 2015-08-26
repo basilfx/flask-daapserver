@@ -43,24 +43,36 @@ class SoundcloudProvider(provider.LocalFileProvider):
         # Add example data to the library. Note that everything should be added
         # in the right order. For instance, you cannot add an item to a
         # database that has not been added to a server yet.
-        database = Database(id=1, name="Soundcloud Library")
+        self.database = database = Database(id=1, name="Soundcloud Library")
         server.databases.add(database)
 
-        container = Container(id=1, name="My Music", is_base=True)
+        self.container = container = Container(
+            id=1, name="My Music", is_base=True)
         database.containers.add(container)
-
-        # Commit initial revision
-        server.commit()
 
         # Prepare Soundcloud connection.
         self.temp_directory = tempfile.mkdtemp()
         self.client = soundcloud.Client(client_id=client_id)
 
+        # Fetch tracks, asynchronous.
+        gevent.spawn(self.get_tracks, usernames)
+
+        # Inform provider that the structure is ready.
+        self.update()
+
+    def get_tracks(self, usernames):
         logger.info("Fetching tracks for usernames: %s", usernames)
 
         for username in usernames:
             logger.info("Fetching tracks for user '%s'", username)
-            tracks = self.client.get("/users/%s/tracks" % username)
+
+            try:
+                tracks = self.client.get("/users/%s/tracks" % username)
+                logger.info(
+                    "Found %d tracks for user '%s'.", len(tracks), username)
+            except:
+                logger.warning("Failed to get tracks for user '%s'", username)
+                continue
 
             for index, track in enumerate(tracks):
                 track = track.obj
@@ -73,22 +85,21 @@ class SoundcloudProvider(provider.LocalFileProvider):
                     album_art_url=track["user"].get("avatar_url"),
                     album_art=True)
                 container_item = ContainerItem(
-                    id=len(container.container_items) + 1, item_id=item.id)
+                    id=len(self.container.container_items) + 1,
+                    container_id=self.container.id,
+                    item_id=item.id)
 
                 # Add item to database
-                database.items.add(item)
-                container.container_items.add(container_item)
+                self.database.items.add(item)
+                self.container.container_items.add(container_item)
 
-            logger.info("Found %d tracks for user '%s'", len(tracks), username)
+            # The server and database have to be re-added so they are marked as
+            # updated.
+            self.server.databases.add(self.database)
+            self.database.containers.add(self.container)
 
-        # Commit this revision
-        server.commit()
-
-    def wait_for_update(self):
-        # In a real server, this should block until an update and return the
-        # next revision number.
-        while True:
-            gevent.sleep(1)
+            # Inform provider of new tracks.
+            self.update()
 
     def get_item_data(self, session, item, byte_range=None):
         item.file_name = os.path.join(self.temp_directory, "%s.mp3" % item.id)
@@ -147,19 +158,19 @@ def main():
         level=logging.DEBUG,
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 
-    # Check arguments
+    # Check arguments.
     if len(sys.argv) < 3:
         sys.stdout.write(
             "%s: <client_id> <user_1> .. <user_n>\n" % sys.argv[0])
         return 1
 
-    # Create server
+    # Create a server.
     server = DaapServer(
         provider=SoundcloudProvider(sys.argv[1], sys.argv[2:]),
         port=3688,
         debug=True)
 
-    # Start a server and wait
+    # Start a server and wait until CTRL + C is pressed.
     server.serve_forever()
 
 # E.g. `python SoundcloudServer.py <client_id> <user_1> .. <user_n>'
