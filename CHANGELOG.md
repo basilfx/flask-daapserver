@@ -8,6 +8,7 @@ Highlights:
 * Added: implemented copy protocol to create copies of data.
 * Added: lazy collection for items.
 * Changed: Cython is now required.
+* Changed: Gevent is now required.
 * Improved: performance of encoder and response generator.
 * Improved: updated examples.
 * Improved: test coverage.

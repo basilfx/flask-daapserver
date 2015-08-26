@@ -291,7 +291,7 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
         """
         """
 
-        revision = provider.get_revision(session_id, revision, delta)
+        revision = provider.get_next_revision(session_id, revision, delta)
 
         data = responses.update(provider, revision)
 

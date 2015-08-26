@@ -2,8 +2,6 @@ from daapserver.collection cimport MutableCollection
 
 
 cdef class Server(object):
-    cdef public int revision
-
     cdef public long persistent_id
     cdef public object name
 

@@ -1,14 +1,16 @@
 from daapserver.utils import parse_byte_range
 
-from enum import Enum
 from datetime import datetime
 
+import enum
 import cStringIO
+import gevent.lock
+import gevent.event
 
 __all__ = ("LocalFileProvider", "Provider", "Session")
 
 
-class State(Enum):
+class State(enum.Enum):
     """
     Client session states.
     """
@@ -16,20 +18,6 @@ class State(Enum):
     connecting = 1
     connected = 2
     streaming = 3
-
-
-class DummyLock(object):
-    """
-    Dummy lock implementation.
-    """
-
-    __slots__ = ()
-
-    def __enter__(self):
-        pass
-
-    def __exit__(self, typ, value, traceback):
-        pass
 
 
 class Session(object):
@@ -89,16 +77,16 @@ class Provider(object):
 
     def __init__(self):
         """
-        Create a new Provider.
-
-        Note: `self.server' should be declared. If using a threaded server,
-        make sure `self.lock` is an applicable lock.
+        Create a new Provider. This method should be invoked from the subclass.
         """
 
+        self.revision = 1
         self.server = None
         self.sessions = {}
         self.session_counter = 0
-        self.lock = DummyLock()
+
+        self.lock = gevent.lock.Semaphore()
+        self.next_revision_available = gevent.event.Event()
 
     def create_session(self, user_agent, remote_address, client_version):
         """
@@ -131,13 +119,13 @@ class Provider(object):
         except KeyError:
             pass
 
-    def get_revision(self, session_id, revision, delta):
+    def get_next_revision(self, session_id, revision, delta):
         """
         Determine the next revision number for a given session id, revision
         and delta.
 
-        In case the client is up-to-date, this method will block via
-        `self.wait_for_update` until the next revision is available.
+        In case the client is up-to-date, this method will block until the next
+        revision is available.
 
         :param int session_id: Session identifier
         :param int revision: Client revision number
@@ -153,40 +141,36 @@ class Provider(object):
             # Increment revision. Never decrement.
             session.revision = max(session.revision, revision)
 
-            # Check sessions.
-            self.check_sessions()
+            # Wait for next revision to become ready.
+            self.next_revision_available.wait()
 
-            # Wait for next revision
-            next_revision = self.wait_for_update()
-        else:
-            next_revision = self.server.revision
+        return self.revision
 
-        return next_revision
-
-    def check_sessions(self):
+    def update(self):
         """
-        Check if the revision history can be cleaned. This is the case when
-        all connected clients have the same revision as the server has.
+        Update this provider. Should be invoked when the server gets updated.
+
+        This method will notify all clients that wait for
+        `self.next_revision_available`.
         """
 
-        lowest_revision = min(
-            session.revision for session in self.sessions.itervalues())
+        with self.lock:
+            # Increment revision and commit it.
+            self.revision += 1
+            self.server.commit(self.revision + 1)
 
-        # Remove all old revision history
-        if lowest_revision == self.server.revision:
-            with self.lock:
-                self.server.clean(lowest_revision)
+            # Unblock all waiting clients.
+            self.next_revision_available.set()
+            self.next_revision_available.clear()
 
-    def wait_for_update(self):
-        """
-        Wait for the next revision to become available. This method should
-        block and return the next revision number.
+            # Check sessions to see which revision can be removed.
+            if self.sessions:
+                lowest_revision = min(
+                    session.revision for session in self.sessions.itervalues())
 
-        :return: Next revision number
-        :rtype: int
-        """
-
-        raise NotImplementedError("Needs to be overridden.")
+                # Remove all old revision history
+                if lowest_revision == self.revision:
+                    self.server.clean(lowest_revision)
 
     def get_databases(self, session_id, revision, delta):
         """

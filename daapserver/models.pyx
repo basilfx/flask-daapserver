@@ -32,8 +32,6 @@ cdef class Server(object):
 
         cdef Server result = <Server> copy.copy(super(Server, self))
 
-        result.revision = self.revision
-
         result.persistent_id = self.persistent_id
         result.name = self.name
 
@@ -49,8 +47,7 @@ cdef class Server(object):
         :rtype unicode:
         """
 
-        return u"%s(name=%s, revision=%d)" % (
-            self.__class__.__name__, self.name, self.revision)
+        return u"%s(name=%s)" % (self.__class__.__name__, self.name)
 
     def __str__(self):
         """
@@ -73,16 +70,22 @@ cdef class Server(object):
 
         return str(self)
 
-    def commit(self):
+    def commit(self, int revision):
         """
+        Propagate a commit to all models that are part of this instance and
+        their children.
+
+        :param int revision: Revision to commit to.
         """
 
-        self.revision += 1
-
-        self._commit(self.revision + 1)
+        self._commit(revision)
 
     def clean(self, int revision):
         """
+        Propagate a clean to all models that are part of this instance and
+        their children.
+
+        :param int revision: Revision to clean up to.
         """
 
         self._clean(revision)

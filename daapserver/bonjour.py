@@ -28,6 +28,11 @@ class Bonjour(object):
         `preferred_database` can be set to choose which database ID will be
         served.
 
+        If the provider is not fully configured (in other words, if the
+        preferred database cannot be found), this method will not publish this
+        server. In this case, simply call this method again when the provider
+        is ready.
+
         If the server was already published, it will be unpublished first.
 
         :param DAAPServer daap_server: DAAP Server instance to publish.
@@ -37,7 +42,21 @@ class Bonjour(object):
         if daap_server in self.daap_servers:
             self.unpublish(daap_server)
 
-        # The IP 0.0.0.0 tells SubDaap to bind to all interfaces. However,
+        # Zeroconf can advertise the information for one database only. Since
+        # the protocol supports multiple database, let the user decide which
+        # database to advertise. If none is specified, take the first one.
+        provider = daap_server.provider
+
+        try:
+            if preferred_database is not None:
+                database = provider.server.databases[preferred_database]
+            else:
+                database = provider.server.databases.values()[0]
+        except LookupError:
+            # The server may not have any databases (yet).
+            return
+
+        # The IP 0.0.0.0 tells this server to bind to all interfaces. However,
         # Bonjour advertises itself to others, so others need an actual IP.
         # There is definately a better way, but it works.
         address = daap_server.ip
@@ -47,16 +66,6 @@ class Bonjour(object):
                 if ip != "127.0.0.1":
                     address = ip
                     break
-
-        # Zeroconf can advertise the information for one database only. Since
-        # the protocol supports multiple database, let the user decide which
-        # database to advertise. If none is specified, take the first one.
-        provider = daap_server.provider
-
-        if preferred_database is not None:
-            database = provider.server.databases[preferred_database]
-        else:
-            database = provider.server.databases.values()[0]
 
         # Determine machine ID and database ID, depending on the provider. If
         # the provider has no support for persistent IDs, generate a random

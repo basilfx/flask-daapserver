@@ -11,7 +11,7 @@ __version__ = "2.3.0"
 class DaapServer(object):
     """
     DAAP Server instance. Combine all components from this module in a ready
-    to use class.
+    to use class. This class uses a gevent-based event loop.
     """
 
     def __init__(self, provider, password=None, ip="0.0.0.0", port=3689,
@@ -40,29 +40,28 @@ class DaapServer(object):
         serve requests until CTRL + C is received.
         """
 
-        # Verify that the provider has a server and at least one database.
-        if self.provider.server is None or \
-                len(self.provider.server.databases) == 0:
+        # Verify that the provider has a server.
+        if self.provider.server is None:
             raise ValueError(
-                "Cannot server server: provider has no server or no databases "
-                "added to server")
+                "Cannot server server: provider has no server to publish.")
 
-        # Create WSGI server
+        # Create WSGI server and run it.
         self.server = WSGIServer((self.ip, self.port), application=self.app)
 
-        # Register Bonjour
-        if self.bonjour:
-            self.bonjour.publish(self)
-
-        # Start server until finished
         try:
-            self.server.serve_forever()
-        except KeyboardInterrupt:
-            pass
+            # Register Bonjour
+            if self.bonjour:
+                self.bonjour.publish(self)
 
-        # Unregister Bonjour
-        if self.bonjour:
-            self.bonjour.unpublish(self)
+            # Start server until finished
+            try:
+                self.server.serve_forever()
+            except KeyboardInterrupt:
+                pass
+        finally:
+            # Unregister Bonjour
+            if self.bonjour:
+                self.bonjour.unpublish(self)
 
     def stop(self):
         """
