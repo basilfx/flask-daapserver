@@ -72,9 +72,9 @@ class ModelsTest(unittest.TestCase):
 
         self.assertListEqual(server.databases.keys(), [2, 1])
 
-        server.commit()
+        server.commit(2)
         server.databases.remove(database)
-        server.commit()
+        server.commit(3)
 
         self.assertListEqual(server.databases.keys(), [1])
         self.assertListEqual(server.databases(revision=2).keys(), [1])
@@ -86,7 +86,7 @@ class ModelsTest(unittest.TestCase):
         database = Database(id=3, name="Database C")
 
         server.databases.add(database)
-        server.commit()
+        server.commit(4)
 
         self.assertListEqual(server.databases.keys(), [3, 1])
         self.assertListEqual(server.databases(revision=3).keys(), [3, 1])
@@ -100,11 +100,11 @@ class ModelsTest(unittest.TestCase):
 
         server = Server()
 
-        server.commit()
-        server.commit()
-        server.commit()
-        server.commit()
-        server.commit()
+        server.commit(2)
+        server.commit(3)
+        server.commit(4)
+        server.commit(5)
+        server.commit(6)
 
         database = Database(id=1, name="Database A")
 
@@ -118,8 +118,6 @@ class ModelsTest(unittest.TestCase):
 
         server.databases.add(database)
         database.items.add(item)
-
-        self.assertEqual(server.revision, 5)
 
         self.assertListEqual(server.databases.keys(), [2])
         self.assertListEqual(server.databases(revision=6).keys(), [2])
@@ -141,7 +139,7 @@ class ModelsTest(unittest.TestCase):
             self.assertListEqual(
                 server.databases[2].items(revision=2).keys(), [3])
 
-        server.commit()
+        server.commit(7)
 
         self.assertListEqual(server.databases[2].items.keys(), [3])
         self.assertListEqual(server.databases[2].items(revision=7).keys(), [3])
@@ -165,12 +163,10 @@ class ModelsTest(unittest.TestCase):
         item = Item(id=2, name="Item A")
         database.items.add(item)
 
-        server.commit()
+        server.commit(2)
 
         item = Item(id=2, name="Item A, version 2")
         database.items.add(item)
-
-        self.assertEqual(server.revision, 1)
 
         items_1 = database.items(revision=1)
         items_2 = database.items(revision=2)
@@ -178,11 +174,11 @@ class ModelsTest(unittest.TestCase):
         self.assertListEqual(items_2.keys(), [2])
         self.assertListEqual(list(items_2.updated(items_1)), [2])
 
-        server.commit()
+        server.commit(3)
 
         database.items.remove(item)
 
-        server.commit()
+        server.commit(4)
 
         items_1 = database.items(revision=1)
         items_2 = database.items(revision=2)
@@ -194,3 +190,40 @@ class ModelsTest(unittest.TestCase):
         self.assertListEqual(list(items_3.removed(items_1)), [2])
         self.assertListEqual(list(items_3.removed(items_2)), [2])
         self.assertListEqual(list(items_3.removed(items_3)), [])
+
+    def test_commit(self):
+        """
+        Test for committing the server.
+        """
+
+        server = Server()
+
+        self.assertEqual(server.databases.store.revision, 1)
+
+        # Cannot commit to lower version than default (version 1).
+        with self.assertRaises(ValueError):
+            server.commit(0)
+
+        server.commit(10)
+        self.assertEqual(server.databases.store.revision, 10)
+
+        # Cannot commit to lower version than last one (version 10).
+        with self.assertRaises(ValueError):
+            server.commit(9)
+
+        server.commit(11)
+        self.assertEqual(server.databases.store.revision, 11)
+
+        # Add a database
+        database = Database(id=1)
+        server.databases.add(database)
+
+        self.assertEqual(database.items.store.revision, 1)
+        self.assertEqual(database.containers.store.revision, 1)
+
+        # Commit will synchronize revision with children.
+        server.commit(12)
+
+        self.assertEqual(server.databases.store.revision, 12)
+        self.assertEqual(database.items.store.revision, 12)
+        self.assertEqual(database.containers.store.revision, 12)
