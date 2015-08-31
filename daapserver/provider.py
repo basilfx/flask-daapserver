@@ -1,4 +1,4 @@
-from daapserver.utils import parse_byte_range
+from daapserver.utils import parse_byte_range, invoke_hooks
 
 from datetime import datetime
 
@@ -7,7 +7,7 @@ import cStringIO
 import gevent.lock
 import gevent.event
 
-__all__ = ("LocalFileProvider", "Provider", "Session")
+__all__ = ("LocalFileProvider", "Provider", "Session", "State")
 
 
 class State(enum.Enum):
@@ -84,6 +84,11 @@ class Provider(object):
         self.server = None
         self.sessions = {}
         self.session_counter = 0
+        self.hooks = {
+            "session_created": [],
+            "session_destroyed": [],
+            "updated": []
+        }
 
         self.lock = gevent.lock.Semaphore()
         self.next_revision_available = gevent.event.Event()
@@ -107,6 +112,9 @@ class Provider(object):
         session.remote_address = remote_address
         session.client_version = client_version
 
+        # Invoke hooks
+        invoke_hooks(self.hooks, "session_created", self.session_counter)
+
         return self.session_counter
 
     def destroy_session(self, session_id):
@@ -118,6 +126,9 @@ class Provider(object):
             del self.sessions[session_id]
         except KeyError:
             pass
+
+        # Invoke hooks
+        invoke_hooks(self.hooks, "session_destroyed", session_id)
 
     def get_next_revision(self, session_id, revision, delta):
         """
@@ -171,6 +182,9 @@ class Provider(object):
                 # Remove all old revision history
                 if lowest_revision == self.revision:
                     self.server.clean(lowest_revision)
+
+        # Invoke hooks
+        invoke_hooks(self.hooks, "updated", self.revision)
 
     def get_databases(self, session_id, revision, delta):
         """

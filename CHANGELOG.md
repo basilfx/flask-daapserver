@@ -7,6 +7,7 @@ Highlights:
 * Added: new data storage backend with simplified revisioning store (less memory).
 * Added: implemented copy protocol to create copies of data.
 * Added: lazy collection for items.
+* Added: hooks for provider-generated events.
 * Changed: Cython is now required.
 * Changed: Gevent is now required.
 * Improved: performance of encoder and response generator.

@@ -112,3 +112,18 @@ def to_tree(instance, *children):
         # Add extra space if required
         if len(children) > 1 and i == len(children) - 1 and lines > 1:
             yield a
+
+
+def invoke_hooks(hooks, name, *args, **kwargs):
+    """
+    Invoke one or more hooks that have been registered under `name'. Additional
+    arguments and keyword arguments can be provided.
+
+    There is no exception catching, so if a hook fails, it will disrupt the
+    chain and/or rest of program.
+    """
+
+    callbacks = hooks.get(name, [])
+
+    for callback in callbacks:
+        callback(*args, **kwargs)
