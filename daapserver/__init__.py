@@ -49,9 +49,14 @@ class DaapServer(object):
         self.server = WSGIServer((self.ip, self.port), application=self.app)
 
         try:
-            # Register Bonjour
-            if self.bonjour:
+            def publish(*args, **kwargs):
+                self.provider.hooks["updated"].remove(publish)
                 self.bonjour.publish(self)
+
+            # Register Bonjour, but wait for it until the client has updated
+            # itself at least once. This indicates that it is ready.
+            if self.bonjour:
+                self.provider.hooks["updated"].append(publish)
 
             # Start server until finished
             try:
