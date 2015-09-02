@@ -54,7 +54,8 @@ class DaapServer(object):
                 self.bonjour.publish(self)
 
             # Register Bonjour, but wait for it until the client has updated
-            # itself at least once. This indicates that it is ready.
+            # at least once. This indicates that it is ready. The hook will be
+            # removed when executed.
             if self.bonjour:
                 self.provider.hooks["updated"].append(publish)
 
