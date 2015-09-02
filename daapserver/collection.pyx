@@ -27,6 +27,15 @@ cdef class ImmutableCollection(object):
         return self.old_revision_class(
             parent=self.parent, store=self.store, revision=revision)
 
+    def __contains__(self, key):
+        """
+        """
+
+        try:
+            return self.store.get(key, revision=self.revision)
+        except KeyError:
+            return False
+
     def __getitem__(self, key):
         """
         """
@@ -276,6 +285,16 @@ cdef class LazyMutableCollection(MutableCollection):
 
         return super(LazyMutableCollection, self).__len__()
 
+    def __contains__(self, key):
+        """
+        """
+
+        if not self.ready:
+            for _ in self.load():
+                pass
+
+        return super(LazyMutableCollection, self).__contains__(key)
+
     def __getitem__(self, key):
         """
         """
@@ -284,8 +303,11 @@ cdef class LazyMutableCollection(MutableCollection):
             return self.iter_item
 
         if not self.ready:
-            for _ in self.load():
-                pass
+            try:
+                return super(LazyMutableCollection, self).__getitem__(key)
+            except KeyError:
+                for _ in self.load():
+                    pass
 
         return super(LazyMutableCollection, self).__getitem__(key)
 
