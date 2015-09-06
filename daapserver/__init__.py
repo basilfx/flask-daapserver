@@ -43,21 +43,22 @@ class DaapServer(object):
         # Verify that the provider has a server.
         if self.provider.server is None:
             raise ValueError(
-                "Cannot server server: provider has no server to publish.")
+                "Cannot start server because the provider has no server to "
+                "publish.")
+
+        # Verify that the provider has a database to advertise.
+        if not self.provider.server.databases:
+            raise ValueError(
+                "Cannot start server because the provider has no databases to "
+                "publish.")
 
         # Create WSGI server and run it.
         self.server = WSGIServer((self.ip, self.port), application=self.app)
 
         try:
-            def publish(*args, **kwargs):
-                self.provider.hooks["updated"].remove(publish)
-                self.bonjour.publish(self)
-
-            # Register Bonjour, but wait for it until the client has updated
-            # at least once. This indicates that it is ready. The hook will be
-            # removed when executed.
+            # Register Bonjour.
             if self.bonjour:
-                self.provider.hooks["updated"].append(publish)
+                self.bonjour.publish(self)
 
             # Start server until finished
             try:
