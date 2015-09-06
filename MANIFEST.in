@@ -1,9 +1,10 @@
+include CHANGELOG.md
 include README.rst
 include README.md
 include LICENSE
-recursive-exclude daapserver *.c
-recursive-exclude daapserver *.so
-recursive-include daapserver *.pxd
+recursive-include daapserver *.pyx *.pxd *.py
+recursive-exclude daapserver *.c *.so
 recursive-include tests *.py
 recursive-include examples *.py
-recursive-include docs *
+recursive-include utils *.py
+recursive-include docs *.md

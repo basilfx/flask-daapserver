@@ -10,10 +10,11 @@ try:
 except ImportError:
     sys.stderr.write(
         "Error: Cython is required, but not installed. Please install Cython "
-        "first with `pip install Cython`.")
+        "first with `pip install Cython`.\n")
     sys.exit(1)
 
-# Install pre-compiler stage. Cannot use normal import
+# Install pre-compiler stage. Cannot use normal import because the precompile
+# is a single file not in the same directory.
 precompiler = imp.load_source("precompiler", os.path.join(
     os.path.dirname(__file__), "utils/transformer.py"))
 precompiler.install_new_pipeline()

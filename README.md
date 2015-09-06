@@ -76,6 +76,9 @@ The revisioning storage API has changed between version v2.3.0 and v3.0.0. Due t
 
 To give an idea of the performance impact, the `utils/benchmark.py` script yielded an improvement of 108MB vs 196MB in memory usage and 0.8375s vs 4.3017s in time (100,000 items, Python 2.7.9, OS X 10.10, 64 Bits).
 
+## Running tests
+There are several unit tests included to test core components. The test suite can be invoked using `python setup.py nosetests`.
+
 ## Usage
 Take a look at the examples, or to the projects using Flask-DAAPServer:
 

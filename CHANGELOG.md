@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.0.0
-Released XX August 2015
+Released 06 September 2015
 
 Highlights:
 * Added: new data storage backend with simplified revisioning store (less memory).
@@ -11,6 +11,7 @@ Highlights:
 * Changed: Cython is now required.
 * Changed: Gevent is now required.
 * Improved: performance of encoder and response generator.
+* Improved: better Bonjour integration.
 * Improved: updated examples.
 * Improved: test coverage.
 
