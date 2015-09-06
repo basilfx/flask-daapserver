@@ -59,13 +59,14 @@ class Bonjour(object):
         # The IP 0.0.0.0 tells this server to bind to all interfaces. However,
         # Bonjour advertises itself to others, so others need an actual IP.
         # There is definately a better way, but it works.
-        address = daap_server.ip
-
         if daap_server.ip == "0.0.0.0":
-            for ip in zeroconf.get_all_addresses(socket.AF_INET):
-                if ip != "127.0.0.1":
-                    address = ip
-                    break
+            addresses = []
+
+            for address in zeroconf.get_all_addresses(socket.AF_INET):
+                if not address == "127.0.0.1":
+                    addresses.append(socket.inet_aton(address))
+        else:
+            addresses = [socket.inet_aton(daap_server.ip)]
 
         # Determine machine ID and database ID, depending on the provider. If
         # the provider has no support for persistent IDs, generate a random
@@ -86,10 +87,15 @@ class Bonjour(object):
             "Database ID": database_id.upper()
         }
 
+        # Test is zeroconf supports multiple addresses or not. For
+        # compatibility with zeroconf 0.17.3 or less.
+        if not hasattr(zeroconf.ServiceInfo("", ""), "addresses"):
+            addresses = addresses[0]
+
         self.daap_servers[daap_server] = zeroconf.ServiceInfo(
             type="_daap._tcp.local.",
             name=provider.server.name + "._daap._tcp.local.",
-            address=socket.inet_aton(address),
+            address=addresses,
             port=daap_server.port,
             properties=description)
         self.zeroconf.register_service(self.daap_servers[daap_server])
