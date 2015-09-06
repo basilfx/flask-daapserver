@@ -55,16 +55,15 @@ class DaapServer(object):
         # Create WSGI server and run it.
         self.server = WSGIServer((self.ip, self.port), application=self.app)
 
-        try:
-            # Register Bonjour.
-            if self.bonjour:
-                self.bonjour.publish(self)
+        # Register Bonjour.
+        if self.bonjour:
+            self.bonjour.publish(self)
 
-            # Start server until finished
-            try:
-                self.server.serve_forever()
-            except KeyboardInterrupt:
-                pass
+        # Start server until finished
+        try:
+            self.server.serve_forever()
+        except KeyboardInterrupt:
+            pass
         finally:
             # Unregister Bonjour
             if self.bonjour:
