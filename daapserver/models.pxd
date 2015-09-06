@@ -31,6 +31,7 @@ cdef class Item(object):
     cdef public object track
     cdef public object artist
     cdef public object album
+    cdef public object album_artist
     cdef public object year
     cdef public object bitrate
     cdef public object duration

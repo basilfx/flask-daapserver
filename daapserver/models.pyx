@@ -264,6 +264,7 @@ cdef class Item(object):
         result.track = self.track
         result.artist = self.artist
         result.album = self.album
+        result.album_artist = self.album_artist
         result.year = self.year
         result.bitrate = self.bitrate
         result.duration = self.duration

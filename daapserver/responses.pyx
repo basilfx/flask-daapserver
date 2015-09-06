@@ -215,6 +215,8 @@ def items(provider, new, old, added, removed, is_update):
             data.append(DAAPObject("daap.songartist", item.artist))
         if item.album is not None:
             data.append(DAAPObject("daap.songalbum", item.album))
+        if item.album_artist is not None:
+            data.append(DAAPObject("daap.songalbumartist", item.album_artist))
         if item.year is not None:
             data.append(DAAPObject("daap.songyear", item.year))
         if item.bitrate is not None:
