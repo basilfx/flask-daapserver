@@ -379,9 +379,16 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
             response = Response(
                 data, 206, mimetype=mimetype,
                 direct_passthrough=not isinstance(data, basestring))
-            response.headers["Content-Range"] = "bytes %d-%d/%d" % (
-                begin, end - 1, total_length)
-            response.headers["Content-Length"] = end - begin
+
+            # A streaming response with unknown content lenght, Range x-*
+            # as per RFC2616 section 14.16
+            if total_length <= 0:
+                response.headers["Content-Range"] = "bytes %d-%d/*" % (
+                    begin, end - 1)
+            elif total_length > 0:
+                response.headers["Content-Range"] = "bytes %d-%d/%d" % (
+                    begin, end - 1, total_length)
+                response.headers["Content-Length"] = end - begin
         else:
             data, mimetype, total_length = provider.get_item(
                 session_id, database_id, item_id)
@@ -390,7 +397,9 @@ def create_server_app(provider, password=None, cache=True, cache_timeout=3600,
             response = Response(
                 data, 200, mimetype=mimetype,
                 direct_passthrough=not isinstance(data, basestring))
-            response.headers["Content-Length"] = total_length
+
+            if total_length > 0:
+                response.headers["Content-Length"] = total_length
 
         return response
 
