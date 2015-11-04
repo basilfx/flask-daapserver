@@ -30,7 +30,7 @@ precompiler.install_new_pipeline()
 # Setup definitions
 setup(
     name="flask-daapserver",
-    version="3.0.0",
+    version="3.0.1",
     description="DAAP server framework implemented with Flask",
     long_description=open("README.rst").read(),
     author="Bas Stottelaar",

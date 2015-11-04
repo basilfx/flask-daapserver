@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.0.1
+Released 04 November 2015
+
+Highlights:
+* Fixed: installation error due to older version of Cython.
+* Improved: documentation in README.md
+
+The full list of commits can be found [here](https://github.com/basilfx/flask-daapserver/compare/v3.0.0...v3.0.1).
+
 ## v3.0.0
 Released 06 September 2015
 
