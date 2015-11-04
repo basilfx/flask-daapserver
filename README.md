@@ -20,9 +20,9 @@ The DAAP data model consists of the following entities:
 
 There are a few more, but the above ones have been implemented.
 
-A server contains databases, a database contains containers and items, a container contains container items and a container item is a one-to-many mapping between items and containers. While the DAAP client implementation of iTunes only supports one database per server, the models does not impose restrictions. Therefore, this implementation does not limit you to add multiple databases.
+A server contains databases, a database contains containers and items, a container contains container items and a container item is a one-to-many mapping between items and containers. While the DAAP client implementation of iTunes only supports one database per server (this is the one that shows up in iTunes), the models does not impose any restrictions. Therefore, this implementation does not keep you from adding multiple databases to a server.
 
-The DAAP protocol is efficient in updating the model. Only the changed entities are send to the client. For this to work, the server has to add revision (version) numbers to the entities, and map entities to revisions. Because several clients can be on different revisions, it is necessary to keep track of all revisions. When all clients are up to date, the older revisions can be cleaned.
+The DAAP protocol efficiently updates the entities. Only deltas are send to the client. For this to work, the server has to add revision (version) numbers to the entities, and map entities to revisions. Because several clients can be on different revisions, it is necessary to keep track of all revisions. When all clients are up to date, the older revisions can be cleaned.
 
 The DAAP protocol assumes that string are encoded as UTF-8. Therefore, you are encouraged to use unicode objects where possible.
 
@@ -32,15 +32,15 @@ Python is a language that does not implement access modifiers (private/protected
 Support for immutable types was planned, but dropped for the following reasons:
 
 * Creating (copy of) objects is expensive, and there are many objects.
-* Cython objects ([Extension Types](http://docs.cython.org/src/userguide/extension_types.html)) should be subclassable in Python, which poses problems with these modifiers.
-* The DAAP protocol does not care about the object contents. For instance, if `obj_in_v3 is obj_in_v4`, and you change `obj_in_v4.name`, any client that still has to update to revision 3 will receive the change made in revision 4. This isn't a problem.
+* Cython objects ([Extension Types](http://docs.cython.org/src/userguide/extension_types.html)) should be subclassable in Python, which poses problems with modifiers.
+* The DAAP protocol does not care about the object contents. For instance, if `obj_in_v3 is obj_in_v4`, and you change `obj_in_v4.name`, any client that still has to update to revision 3 will receive the change made in revision 4. This isn't a problem if you want to update clients to the latest version.
 
-Do note that, if you want to go for immutability, you have to keep in mind that objects may have more properties. For instance, the following will fail:
+Do note that this module does not merge objects with the same ID of different revisions. For instance, the following will fail:
 
-```
+```python
 db_rev1 = Database(id=1, name="My DB")
 server.databases.add(db_rev1)
-server.databases[1] is db_rev1  # True
+server.databases[1] is db_rev1  # Is True
 
 db_rev1.items.add(Item(id=1, name="Song 1"))
 db_rev1.items.add(Item(id=2, name="Song 2"))
@@ -48,16 +48,31 @@ db_rev1.items.add(Item(id=3, name="Song 3"))
 
 db_rev2 = Database(id=2, name="My Updated DB")
 server.databases.add(db_rev2)
-server.databases[1] is db_rev2  # True
+server.databases[1] is db_rev2  # Is True
 
-len(db_rev1.items) is not len(db_rev2.items)  # Reference to items lost.
+len(db_rev1.items) is not len(db_rev2.items)  # Reference to items lost because
+                                              # db_rev1.items was overwritten.
 ```
 
-The correct way is changing `db_rev2` to the following (the copy is redundant if you don't care about the reference problem):
+If you want immutability, a correct way is the following:
 
-```
+```python
 db_rev2 = copy.copy(server.databases[1])
-db_rev2.name = "My Updated DB"
+db_rev2.name = "My DB, version 2"
+
+db_rev1.items is db_rev2.items  # Is True
+```
+
+The copy can even be skipped if you don't care about actual immutability and don't mind that intermediate revision will all be the same:
+
+```python
+db_rev3 = server.databases[1]
+db_rev3.name = "My DB, version 3"
+
+db_rev1.items is db_rev2.items is db_rev3.items  # Is True
+db_rev2.name == db_rev3.name  # Is True because db_rev3 is not a copy. However,
+                              # the revisioning store will detect this as
+                              # another update.
 ```
 
 ## Installation
@@ -90,6 +105,9 @@ There are four examples included in the `examples/` directory. You can run them 
 * `ExampleServer.py` &mdash; Most basic example of a DAAP server.
 * `RevisionServer.py` &mdash; Demonstration of revisioning capabilities.
 * `SoundcloudServer.py` &mdash; Soundcloud server that streams all tracks of a certain users. Requires a Client ID and the Soundcloud Python module.
+
+## Contributing
+Feel free to submit a pull request. All pull requests must be made against the `development` branch. Python code should follow the PEP-8 conventions and tested (if applicable).
 
 ## License
 See the `LICENSE` file (MIT license).
