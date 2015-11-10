@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.0.2
+Released XX November 2015
+
+Highlights:
+* Added: support for items with content length that is not yet known (Thanks to @ties).
+
+The full list of commits can be found [here](https://github.com/basilfx/flask-daapserver/compare/v3.0.1...v3.0.2).
+
 ## v3.0.1
 Released 04 November 2015
 
