@@ -1,7 +1,7 @@
 # Changelog
 
 ## v3.0.2
-Released XX November 2015
+Released 18 November 2015
 
 Highlights:
 * Added: support for items with content length that is not yet known (Thanks to @ties).
