@@ -2,7 +2,7 @@
 DAAP server for streaming media, built around the Flask micro framework. Supports iTunes, artwork and revisioning.
 
 [![Build Status](https://travis-ci.org/basilfx/flask-daapserver.svg?branch=master)](https://travis-ci.org/basilfx/flask-daapserver)
-[![Latest Version](https://pypip.in/version/flask-daapserver/badge.svg)](https://pypi.python.org/pypi/flask-daapserver/)
+[![Latest Version](https://img.shields.io/pypi/v/flask-daapserver.svg)](https://pypi.python.org/pypi/flask-daapserver/)
 
 ## Introduction.
 The Digital Audio Access Protocol (DAAP) is a protocol designed by Apple to share media over the network, using HTTP as transport layer. It advertises itself via Bonjour/Zeroconf.
